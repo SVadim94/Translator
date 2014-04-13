@@ -1,9 +1,7 @@
-#include <iostream>
-#include <lex.h>
-
-using namespace std;
+#include "lex.h"
 
 int main()
 {
-	
+	Parser pars;
+	pars.start();
 }

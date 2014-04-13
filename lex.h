@@ -1,12 +1,19 @@
+#include <iostream>
+#include <cstdio>
 #include <string>
 #include <vector>
+#define SEP_TABLE_SIZE sizeof(Parser::td) / sizeof(int)
+#define WORDS_TABLE_SIZE sizeof(Parser::tw) / sizeof(int)
+
+using namespace std;
 
 /*Типы лексем.
 LEX_LCRO и LEX_RCRO - левая и правая фигурные скобки
 LEX_RPAR и LEX_LPAR - левая и правая круглые скобки
 */
-enum lex_type
+enum LexType
 {
+	LEX_NULL,
 	//Служебные слова
 	LEX_PROGRAM, LEX_IF, LEX_ELSE, LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
 	LEX_FOR, LEX_WHILE, LEX_BREAK, LEX_GOTO, LEX_READ, LEX_WRITE,
@@ -14,18 +21,17 @@ enum lex_type
 	//Разделители
 	LEX_LCRO, LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON,
 	LEX_COMMA, LEX_EQ, LEX_NEQ, LEX_LEQ, LEX_GEQ, LEX_LSS, LEX_GTR,
-	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT,
+	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_ASSIGN,
 	//Остальное
 	LEX_IDENT, LEX_NUM, LEX_STR, LEX_LOG
-}
+};
 
 //Структура лексемы
-class Lex
+struct Lex
 {
-	lex_type lType;
-	int pos; //Позиция в таблице идентификаторов или непосредственно значение
-public:
-	Lex(lex_type lT, int val) : lType(lT), pos(val) {}
+	LexType lex_type;
+	int value; //Позиция в таблице идентификаторов или непосредственно значение
+	Lex(LexType lT=LEX_NULL, int val=-1) : lex_type(lT), value(val) {}
 	~Lex() {}
 	//...
 };
@@ -36,10 +42,9 @@ class TID
 	vector<string> table;
 	int top;
 public:
-	TID() : top(-1) {}
+	TID() : top(0) {}
 	~TID() {}
-	void add(char c) {table[top].push_back(c);}
-	void push(char c) {table[++top].push_back(c);}
+	int push(string &str) {table.push_back(str); return top++;}
 	//...
 };
 
@@ -60,34 +65,27 @@ class Parser
 {
 	static const char * TW[];
 	static const char * TD[];
-	static const lex_type tw[];
-	static const lex_type td[];
+	static const LexType tw[];
+	static const LexType td[];
+	LexList lex_list;
+	TID tid;
+	Lex lex;
+	string ident;
+	char c;
+	enum MODE{
+		START,
+		IDENT,
+		NUM,
+		SEPARATOR,
+		STOP
+		//...
+	} mode;
 public:
-	Parser() {}
+	Parser(): mode(START) {}
 	~Parser() {}
+	int start();
+	int findTD(const string &str) const;
+	int findTW(const string &str) const;
 	//...
+friend bool is_separator(char c);
 };
-
-lex_type Parser::tw[]={
-	LEX_PROGRAM, LEX_IF, LEX_ELSE, LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
-	LEX_FOR, LEX_WHILE, LEX_BREAK, LEX_GOTO, LEX_READ, LEX_WRITE,
-	LEX_STRUCT,	LEX_INT, LEX_STRING, LEX_BOOL
-}
-
-lex_type Parser::tw[]={
-	LEX_LCRO, LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON,
-	LEX_COMMA, LEX_EQ, LEX_NEQ, LEX_LEQ, LEX_GEQ, LEX_LSS, LEX_GTR,
-	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT
-}
-
-const char * Parser::TW[]={
-	"program", "if", "else", "switch", "case", "default",
-	"for", "while", "break", "goto", "read", "write",
-	"struct", "int", "string", "bool"
-}
-
-const char * Parser::TD[]={
-	"{", "}", "(", ")", ":", ";",
-	",", "=", "!=", "<=", ">=", "<", ">",
-	"+", "-", "/", "%", "*"
-}
