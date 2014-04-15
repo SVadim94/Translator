@@ -23,7 +23,9 @@ enum LexType
 	LEX_COMMA, LEX_EQ, LEX_NEQ, LEX_LEQ, LEX_GEQ, LEX_LSS, LEX_GTR,
 	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_ASSIGN,
 	//Остальное
-	LEX_IDENT, LEX_NUM, LEX_STR, LEX_LOG
+	LEX_IDENT, LEX_NUM, LEX_STR, LEX_LOG,
+	//Служебный элемент перечисления для подсчета кол-ва
+	LEX_LAST
 };
 
 //Структура лексемы
@@ -45,6 +47,8 @@ public:
 	TID() : top(0) {}
 	~TID() {}
 	int push(string &str) {table.push_back(str); return top++;}
+	void print() const;
+	string & operator[](int i) {return table.at(i);}
 	//...
 };
 
@@ -56,6 +60,7 @@ public:
 	LexList() {};
 	~LexList() {};
 	void push(const Lex &lex) {list.push_back(lex);}
+	void print() const;
 	//...
 };
 
@@ -83,9 +88,11 @@ class Parser
 public:
 	Parser(): mode(START) {}
 	~Parser() {}
-	int start();
+	void start();
 	int findTD(const string &str) const;
 	int findTW(const string &str) const;
+	void print() const;
 	//...
 friend bool is_separator(char c);
+friend class LexList;
 };

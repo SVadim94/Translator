@@ -24,10 +24,51 @@ const char * Parser::TD[]={
 	"+", "-", "/", "%", "*", "="
 };
 
+void TID::print() const
+{
+	for (int i=0; i<top; ++i)
+		cout << '#' << i << ": " << table[i] << endl;
+}
+
+void LexList::print() const
+{
+	LexType tmp_lex;
+	for (unsigned int i=0; i<list.size(); ++i)
+	{
+		tmp_lex=list[i].lex_type;
+		if (tmp_lex <= LEX_NULL || tmp_lex >= LEX_LAST)
+			throw "Error in list of lexeme! Lexeme out of range!";
+		else
+		if (tmp_lex >= LEX_PROGRAM && tmp_lex <= LEX_BOOL)
+			cout << Parser :: TW[tmp_lex - LEX_PROGRAM] << " -> " << list[i].value << endl; //Убрать после дебага!
+		else
+		if (tmp_lex >= LEX_LCRO && tmp_lex <= LEX_ASSIGN)
+			cout << Parser :: TD[tmp_lex - LEX_LCRO] << " -> " << list[i].value << endl;
+		else
+			switch (tmp_lex)
+			{
+			case LEX_IDENT:
+				cout << "Identificator" << " -> " << list[i].value << endl;
+			break;
+			case LEX_NUM:
+				cout << "Numeric constant" << " -> " << list[i].value << endl;
+			break;
+			case LEX_STR:
+				cout << "String constant" << " -> " << list[i].value << endl;
+			break;
+			}
+	}
+}
+
+void Parser::print() const
+{
+	tid.print();
+    lex_list.print();
+}
 
 bool is_alpha(char c)
 {
-	return (c>='a' && c<='z' || c>='A' && c<='Z');
+	return ((c>='a' && c<='z') || (c>='A' && c<='Z'));
 }
 
 bool is_num(char c)
@@ -57,7 +98,7 @@ void readComment()
 	prev=getchar();
 	if (prev!='*')
 		throw "Expected '*' after '/' but got something else!";
-	while(cur=getchar())
+	while((cur=getchar())!=EOF)
 	{
 		if (cur=='/' && prev=='*')
 			break;
@@ -83,7 +124,7 @@ int Parser::findTW(const string &str) const
 	return -1;
 }
 
-int Parser::start()
+void Parser::start()
 {
 	int tmp;
 	c = getchar();
@@ -135,7 +176,7 @@ int Parser::start()
 					lex_list.push(lex);
 				}
 				else
-				if (c!=' ' && c!='\n' && c!='\t')
+				if (c!=' ' && c!='\n' && c!='\t' && c!=EOF)
 				{
 					throw "Something went wrong!";
 				}
@@ -169,7 +210,10 @@ int Parser::start()
 					throw "Wrong identificator!";
 				else
 				if (is_num(c))
+				{
 					lex.value = 10*lex.value + c - '0';
+					c = getchar();
+				}
 				else
 				{
 					lex_list.push(lex);
@@ -182,7 +226,7 @@ int Parser::start()
 					ident.push_back(c);
 					c = getchar();
 				}
-				if (ident.size()!=2 && ident[0]!='!')
+				if (ident.size()!=2 || ident[0]!='!')
 				{
 					tmp=findTD(ident);
 					if (tmp==-1)
@@ -197,5 +241,5 @@ int Parser::start()
 			break;
 		}
 	}
-	while(mode!=STOP || c!=EOF);
+	while(mode!=STOP && c!=EOF);
 }
