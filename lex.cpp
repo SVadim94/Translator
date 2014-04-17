@@ -3,7 +3,8 @@
 const LexType Parser::tw[]={
 	LEX_PROGRAM, LEX_IF, LEX_ELSE, LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
 	LEX_FOR, LEX_WHILE, LEX_BREAK, LEX_GOTO, LEX_READ, LEX_WRITE,
-	LEX_STRUCT,	LEX_INT, LEX_STRING, LEX_BOOL
+	LEX_STRUCT,	LEX_INT, LEX_STRING, LEX_NOT, LEX_OR, LEX_AND, LEX_TRUE,
+	LEX_FALSE, LEX_BOOL
 };
 
 const LexType Parser::td[]={
@@ -15,7 +16,8 @@ const LexType Parser::td[]={
 const char * Parser::TW[]={
 	"program", "if", "else", "switch", "case", "default",
 	"for", "while", "break", "goto", "read", "write",
-	"struct", "int", "string", "bool"
+	"struct", "int", "string", "not", "or", "and", "true",
+	"false", "bool"
 };
 
 const char * Parser::TD[]={
@@ -28,6 +30,16 @@ void TID::print() const
 {
 	for (int i=0; i<top; ++i)
 		cout << '#' << i << ": " << table[i] << endl;
+}
+
+int TID::find(const string &str) const
+{
+	for (unsigned int i=0; i<table.size(); ++i)
+	{
+		if (str.compare(table[i])==0)
+			return i;
+	}
+	return -1;
 }
 
 void LexList::print() const
@@ -96,8 +108,6 @@ void readComment()
 {
 	char cur,prev;
 	prev=getchar();
-	if (prev!='*')
-		throw "Expected '*' after '/' but got something else!";
 	while((cur=getchar())!=EOF)
 	{
 		if (cur=='/' && prev=='*')
@@ -127,13 +137,50 @@ int Parser::findTW(const string &str) const
 void Parser::start()
 {
 	int tmp;
+	char c;
+	Lex lex;
+	Define def;
+	string ident;
+	bool was_slash_n = true, in_process = false;
+
 	c = getchar();
 	do
 	{
 		switch(mode)
 		{
 			case START:
-				if (is_alpha(c))
+				if (c=='#')
+				{
+					if (!was_slash_n)
+						throw "# must be at the begin of the line!";
+					cin >> ident;
+					cin.ignore();
+					if (ident.compare("define")==0)
+					{
+						//Считать идентификатор
+						pre_proc_list.push_back(def);
+					}
+					else
+					if (ident.compare("undef")==0)
+					{
+						//Поиск
+						//Удаление
+					}
+					else
+					if (ident.compare("ifdef")==0)
+					{
+						//oh shit!
+					}
+					else
+					if (ident,compare("ifndef")==0)
+					{
+						//still oh shit
+					}
+					else
+						throw "Wrong directive!";
+				}
+				else
+				if (is_alpha(c)) //Побочный эффект
 				{
 					mode = IDENT;
 					ident.clear();
@@ -151,7 +198,7 @@ void Parser::start()
 				{
 					ident.clear();
 					ident.push_back(c);
-					if (c=='=' || c=='!' || c=='<' || c=='>')
+					if (c=='=' || c=='!' || c=='<' || c=='>' || c=='/')
 					{
 						mode = SEPARATOR;
 					}
@@ -163,23 +210,23 @@ void Parser::start()
 					}
 				}
 				else
-				if (c=='/')
-				{
-					readComment();
-				}
-				else
 				if (c=='\"')
 				{
 					readString(ident);
 					lex.lex_type = LEX_STR;
-					lex.value = tid.push(ident);
+					tmp = tid.find(ident);
+					if (tmp==-1)
+						lex.value = tid.push(ident);
+					else
+						lex.value = tmp;
 					lex_list.push(lex);
 				}
 				else
 				if (c!=' ' && c!='\n' && c!='\t' && c!=EOF)
 				{
-					throw "Something went wrong!";
+					throw "Something went wrong / Restricted symbol!";
 				}
+				was_slash_n = (c=='\n');
 				c = getchar();
 			break;
 			case IDENT:
@@ -189,13 +236,18 @@ void Parser::start()
 					c = getchar();
 				}
 				else
+				if (is_separator(c) || c==' ' || c==EOF || c=='\n' || c=='\t')
 				{
 					mode=START;
 					tmp=findTW(ident);
-					if (tmp==-1)
+					if (tmp == -1)
 					{
 						lex.lex_type = LEX_IDENT;
-						lex.value = tid.push(ident);
+						tmp = tid.find(ident);
+						if (tmp == -1)
+							lex.value = tid.push(ident);
+						else
+							lex.value = tmp;
 					}
 					else
 					{
@@ -204,6 +256,8 @@ void Parser::start()
 					}
 					lex_list.push(lex);
 				}
+				else
+					throw "Wrong identificator!";
 			break;
 			case NUM:
 				if (is_alpha(c))
@@ -215,28 +269,37 @@ void Parser::start()
 					c = getchar();
 				}
 				else
+				if (!is_separator(c) && ...)
 				{
 					lex_list.push(lex);
 					mode=START;
 				}
 			break;
 			case SEPARATOR:
-				if (c=='=')
+				if (c=='*')
 				{
-					ident.push_back(c);
+					readComment();
 					c = getchar();
 				}
-				if (ident.size()!=2 || ident[0]!='!')
-				{
-					tmp=findTD(ident);
-					if (tmp==-1)
-						throw "Incorrect sepator's combination!";
-					lex.lex_type = td[tmp];
-					lex.value = -1;
-					lex_list.push(lex);
-				}
 				else
-					throw "Expected '=' after '!' but got something else!";
+				{
+					if (c=='=')
+					{
+						ident.push_back(c);
+						c = getchar();
+					}
+					if (ident.size()!=2 || ident[0]!='!')
+					{
+						tmp=findTD(ident);
+						if (tmp==-1)
+							throw "Incorrect sepator's combination!";
+						lex.lex_type = td[tmp];
+						lex.value = -1;
+						lex_list.push(lex);
+					}
+					else
+						throw "Expected '=' after '!' but got something else!";
+				}
 				mode = START;
 			break;
 		}

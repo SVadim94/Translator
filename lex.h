@@ -17,13 +17,14 @@ enum LexType
 	//Служебные слова
 	LEX_PROGRAM, LEX_IF, LEX_ELSE, LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
 	LEX_FOR, LEX_WHILE, LEX_BREAK, LEX_GOTO, LEX_READ, LEX_WRITE,
-	LEX_STRUCT,	LEX_INT, LEX_STRING, LEX_BOOL,
+	LEX_STRUCT,	LEX_INT, LEX_STRING, LEX_NOT, LEX_OR, LEX_AND, LEX_TRUE,
+	LEX_FALSE, LEX_BOOL,
 	//Разделители
 	LEX_LCRO, LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON,
 	LEX_COMMA, LEX_EQ, LEX_NEQ, LEX_LEQ, LEX_GEQ, LEX_LSS, LEX_GTR,
 	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_ASSIGN,
 	//Остальное
-	LEX_IDENT, LEX_NUM, LEX_STR, LEX_LOG,
+	LEX_IDENT, LEX_NUM, LEX_STR,
 	//Служебный элемент перечисления для подсчета кол-ва
 	LEX_LAST
 };
@@ -47,6 +48,7 @@ public:
 	TID() : top(0) {}
 	~TID() {}
 	int push(string &str) {table.push_back(str); return top++;}
+	int find(const string &) const;
 	void print() const;
 	string & operator[](int i) {return table.at(i);}
 	//...
@@ -72,11 +74,10 @@ class Parser
 	static const char * TD[];
 	static const LexType tw[];
 	static const LexType td[];
+
 	LexList lex_list;
 	TID tid;
-	Lex lex;
-	string ident;
-	char c;
+
 	enum MODE{
 		START,
 		IDENT,
@@ -85,6 +86,14 @@ class Parser
 		STOP
 		//...
 	} mode;
+
+	struct Define
+	{
+		string from;
+		string to;
+	};
+	vector<Define> pre_proc_list;
+
 public:
 	Parser(): mode(START) {}
 	~Parser() {}
