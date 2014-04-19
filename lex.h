@@ -22,7 +22,7 @@ enum LexType
 	//Разделители
 	LEX_LCRO, LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON,
 	LEX_COMMA, LEX_EQ, LEX_NEQ, LEX_LEQ, LEX_GEQ, LEX_LSS, LEX_GTR,
-	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_ASSIGN,
+	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_DOT, LEX_ASSIGN,
 	//Остальное
 	LEX_IDENT, LEX_NUM, LEX_STR,
 	//Служебный элемент перечисления для подсчета кол-ва
@@ -90,7 +90,7 @@ class Parser
 	struct Define
 	{
 		string from;
-		string to;
+		int to;
 	};
 	vector<Define> pre_proc_list;
 
@@ -98,10 +98,11 @@ public:
 	Parser(): mode(START) {}
 	~Parser() {}
 	void start();
-	int findTD(const string &str) const;
-	int findTW(const string &str) const;
+	int findTD(const string &) const;
+	int findTW(const string &) const;
+	int findPP(const string &) const;
 	void print() const;
 	//...
-friend bool is_separator(char c);
+friend bool is_separator(char);
 friend class LexList;
 };

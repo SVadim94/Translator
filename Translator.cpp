@@ -9,5 +9,6 @@ int main()
         pars.print();
 	}
 	catch(const char * str) {cout << str << endl;}
-	catch(...) {cout << "I dunno, lol ¯\\(°_o)/¯";}
+	catch(...) {cout << "Unexpected error!";}
+//	catch(...) {cout << "I dunno, lol ¯\\(°_o)/¯";}
 }

@@ -10,7 +10,7 @@ const LexType Parser::tw[]={
 const LexType Parser::td[]={
 	LEX_LCRO, LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON,
 	LEX_COMMA, LEX_EQ, LEX_NEQ, LEX_LEQ, LEX_GEQ, LEX_LSS, LEX_GTR,
-	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_ASSIGN
+	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_DOT, LEX_ASSIGN
 };
 
 const char * Parser::TW[]={
@@ -23,7 +23,7 @@ const char * Parser::TW[]={
 const char * Parser::TD[]={
 	"{", "}", "(", ")", ":", ";",
 	",", "==", "!=", "<=", ">=", "<", ">",
-	"+", "-", "/", "%", "*", "="
+	"+", "-", "/", "%", "*", ".", "="
 };
 
 void TID::print() const
@@ -78,12 +78,12 @@ void Parser::print() const
     lex_list.print();
 }
 
-bool is_alpha(char c)
+inline bool is_alpha(char c)
 {
 	return ((c>='a' && c<='z') || (c>='A' && c<='Z'));
 }
 
-bool is_num(char c)
+inline bool is_num(char c)
 {
 	return (c>='0' && c<='9');
 }
@@ -94,6 +94,11 @@ bool is_separator(char c)
 		if (c==Parser::TD[i][0])
 			return true;
 	return false;
+}
+
+inline bool is_space(char c)
+{
+	return (c==' ' || c=='\n' || c=='\t' || c==EOF);
 }
 
 void readString(string &str)
@@ -134,14 +139,22 @@ int Parser::findTW(const string &str) const
 	return -1;
 }
 
+int Parser::findPP(const string &str) const
+{
+    for (int i=0; i < pre_proc_list.size(); ++i)
+		if (pre_proc_list[i].from.compare(str)==0)
+			return i;
+	return -1;
+}
+
 void Parser::start()
 {
-	int tmp;
+	int tmp, if_count = 0, else_count = 0;
 	char c;
 	Lex lex;
 	Define def;
 	string ident;
-	bool was_slash_n = true, in_process = false;
+	bool define_allowed = true, in_process = false;
 
 	c = getchar();
 	do
@@ -149,37 +162,195 @@ void Parser::start()
 		switch(mode)
 		{
 			case START:
-				if (c=='#')
+				/*if (c=='#')
 				{
-					if (!was_slash_n)
-						throw "# must be at the begin of the line!";
-					cin >> ident;
-					cin.ignore();
+					if (!define_allowed)
+						throw "# must be first non-separator in the line!";
+
+					ident.clear();
+
+					while((c = getchar()) == ' ' || c=='\t');
+
+					if (!is_alpha(c))
+						throw "Wrong directive!";
+
+					while (true)
+					{
+						if (is_alpha(c))
+							ident.push_back(c);
+						else
+						if (c==' ')
+							break;
+						else
+							throw "Wrong directive [2]!";
+						c=getchar();
+					}
+
 					if (ident.compare("define")==0)
 					{
-						//Считать идентификатор
+						def.from.clear();
+
+						while((c = getchar()) == ' ' || c == '\t');
+
+						if (!is_alpha(c))
+							throw "First #define's argument must be identifier!";
+
+						while (true)
+						{
+							if (is_alpha(c) || is_num(c))
+								def.from.push_back(c);
+							else
+							if (c==' ' || c=='\t')
+								break;
+							else
+								throw "First #define's argument must be identifier [2]!";
+							c=getchar();
+						}
+
+						if (findTW(def.from)!=-1) // Служенбное слово?
+							throw "#define's first argument can't be a function word!";
+
+						def.to = 0;
+
+						while((c=getchar())==' ' || c == '\t');
+
+						if (!is_num(c))
+							throw "Second argument of #define must be numeric constant!";
+
+						while(true)
+						{
+							if (is_num(c))
+								def.to = 10*def.to + c - '0'; // Переполнение?!
+							else
+							if (c==' ' || c=='\t')
+							{
+								while((c = getchar())!='\n')
+									if (c!=' ' || c!='\t')
+										throw "Unexpected symbols after #define's second argument!";
+								break;
+							}
+							if (c=='\n')
+								break;
+							else
+							if (c!=' ')
+								throw "Second argument of #define must be numeric constant! [2]";
+						}
+
 						pre_proc_list.push_back(def);
 					}
 					else
 					if (ident.compare("undef")==0)
 					{
-						//Поиск
-						//Удаление
+						ident.clear();
+
+						while((c = getchar()) == ' ' || c == '\t');
+
+						if (!is_alpha(c))
+							throw "First #undef's argument must be identifier!";
+
+						while (true)
+						{
+							if (is_alpha(c) || is_num(c))
+								ident.push_back(c);
+							else
+							if (c==' ' || c=='\t')
+							{
+								while((c = getchar())!='\n')
+									if (c!=' ' || c!='\t')
+										throw "Unexpected symbols after #undef's first argument!";
+								break;
+							}
+							else
+							if (c=='\n')
+								break;
+							else
+								throw "First #undef's argument must be identifier [2]!";
+
+							c=getchar();
+						}
+
+						tmp = findPP(ident);
+
+						if (tmp != -1)
+                            pre_proc_list.erase(pre_proc_list.begin() + tmp);
 					}
 					else
 					if (ident.compare("ifdef")==0)
 					{
-						//oh shit!
+						ident.clear();
+
+						while((c = getchar()) == ' ' || c == '\t');
+
+						if (!is_alpha(c))
+							throw "First #ifdef's argument must be identifier!";
+
+						while (true)
+						{
+							if (is_alpha(c) || is_num(c))
+								ident.push_back(c);
+							else
+							if (c==' ' || c=='\t')
+							{
+								while((c = getchar())!='\n')
+									if (c!=' ' || c!='\t')
+										throw "Unexpected symbols after #ifdef's first argument!";
+								break;
+							}
+							else
+							if (c=='\n')
+								break;
+							else
+								throw "First #ifdef's argument must be identifier [2]!";
+
+							c=getchar();
+						}
+
+						++if_count;
+						++else_count;
+
+						tmp = findPP(ident);
+
+						ident.clear();
+
+						if (tmp == -1) //Проскакиваем все до endif'a
+						{
+							while(true)
+							{
+								if (c=='\n')
+                                    while ((c = getchar())==' ' || c=='\t');
+								if (c=='#')
+								{
+									cin >> ident;
+									cin.ignore();
+									if (ident.compare("ifdef")==0)
+										++if_count;
+
+								}
+							}
+						}
+						else
+						//Либо игнорить, либо скакать
 					}
 					else
-					if (ident,compare("ifndef")==0)
+					if (ident.compare("ifndef")==0)
 					{
-						//still oh shit
+						//Считать идентификатор и переход на строку
+						//Либо инорить, либо скакать
 					}
 					else
-						throw "Wrong directive!";
+					if (ident.compare("else"))
+					{
+						//Dunno! должен быть еще if
+					}
+					else
+					if (ident.compare("endif"))
+					{
+						//Уменьшить число вложенных if'ов
+					}
+					else
+						throw "Wrong directive [3]!";
 				}
-				else
+				else */
 				if (is_alpha(c)) //Побочный эффект
 				{
 					mode = IDENT;
@@ -222,11 +393,10 @@ void Parser::start()
 					lex_list.push(lex);
 				}
 				else
-				if (c!=' ' && c!='\n' && c!='\t' && c!=EOF)
-				{
+				if (!is_space(c))
 					throw "Something went wrong / Restricted symbol!";
-				}
-				was_slash_n = (c=='\n');
+				else
+					define_allowed = true;
 				c = getchar();
 			break;
 			case IDENT:
@@ -236,7 +406,7 @@ void Parser::start()
 					c = getchar();
 				}
 				else
-				if (is_separator(c) || c==' ' || c==EOF || c=='\n' || c=='\t')
+				if (is_separator(c) || is_space(c))
 				{
 					mode=START;
 					tmp=findTW(ident);
@@ -269,11 +439,13 @@ void Parser::start()
 					c = getchar();
 				}
 				else
-				if (!is_separator(c) && ...)
+				if (is_separator(c) || is_space(c))
 				{
 					lex_list.push(lex);
 					mode=START;
 				}
+				else
+					throw "An error occured while reading number!";
 			break;
 			case SEPARATOR:
 				if (c=='*')
