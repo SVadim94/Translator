@@ -66,6 +66,71 @@ public:
 	//...
 };
 
+class IfElseStack
+{
+	struct Stack
+	{
+		bool was_else;
+		bool ignore_point;
+		Stack *next;
+		Stack(): was_else(false), ignore_point(false) {}
+	};
+	Stack *first;
+public:
+    IfElseStack(): first(NULL) {}
+
+    ~IfElseStack()
+    {
+    	Stack *tmp = first;
+    	while (tmp != NULL)
+		{
+			tmp = first->next;
+			delete first;
+			first = tmp;
+		}
+	}
+
+    bool isEmpty() {return first == NULL;}
+
+    void push()
+    {
+    	Stack *tmp = new Stack;
+    	tmp->next = first;
+    	first = tmp;
+	}
+
+	void pop()
+	{
+        Stack *tmp;
+        if (isEmpty())
+			throw "#if-#endif disbalance!";
+		tmp = first->next;
+		delete first;
+		first = tmp;
+	}
+
+	void check()
+	{
+		if (isEmpty())
+			throw "#if-#else disbalance!";
+		first->was_else = true;
+	}
+
+	bool stopIgnore()
+	{
+		if (isEmpty())
+			throw "Undefined error!";
+		return first->ignore_point;
+	}
+
+	void ignore()
+	{
+		if (isEmpty())
+			throw "Undefinef error! [2]";
+		first->ignore_point = true;
+	}
+};
+
 //Класс , ответственный за выделение лексем и составление таблиц
 //Содержит также таблицы служебных слов и разделителей
 class Parser
