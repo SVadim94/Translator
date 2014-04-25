@@ -178,7 +178,6 @@ void Parser::start()
 
 					ident.clear();
 
-					//while((c = getchar()) == ' ' || c=='\t');
 					c = getchar();
 
 					if (!is_alpha(c))
@@ -256,6 +255,11 @@ void Parser::start()
 							c = getchar();
 						}
 
+						tmp = findPP(def.from);
+
+						if (tmp != -1)
+							pre_proc_list.erase(pre_proc_list.begin() + tmp);
+
 						pre_proc_list.push_back(def);
 					}
 					else
@@ -269,25 +273,25 @@ void Parser::start()
 						while((c = getchar()) == ' ' || c == '\t');
 
 						if (!is_alpha(c))
-							throw "First #undef's argument must be identifier!";
+							throw "#undef's argument must be identifier!";
 
 						while (true)
 						{
 							if (is_alpha(c) || is_num(c))
 								ident.push_back(c);
 							else
-							if (c==' ' || c=='\t')
+							if (c == ' ' || c == '\t')
 							{
 								while((c = getchar()) != '\n')
 									if (c != ' ' || c != '\t')
-										throw "Unexpected symbols after #undef's first argument!";
+										throw "Unexpected symbols after #undef's argument!";
 								break;
 							}
 							else
 							if (c == '\n')
 								break;
 							else
-								throw "First #undef's argument must be identifier [2]!";
+								throw "#undef's argument must be identifier [2]!";
 
 							c = getchar();
 						}
@@ -301,6 +305,9 @@ void Parser::start()
 					if (ident.compare("ifdef") == 0)
 					{
 						ident.clear();
+
+						if (c == '\n' || c == EOF)
+							throw "Missing #ifdef's first argument!";
 
 						while((c = getchar()) == ' ' || c == '\t');
 
@@ -622,25 +629,27 @@ void Parser::start()
 						throw "Wrong directive [3]!";
 				}
 				else
-				if ((define_allowed = false) || is_alpha(c)) //Побочный эффект
+				if (is_alpha(c)) //Побочный эффект
 				{
 					mode = IDENT;
 					ident.clear();
 					ident.push_back(c);
+					define_allowed = false;
 				}
 				else
 				if (is_num(c))
 				{
-					mode=NUM;
+					mode = NUM;
 					lex.lex_type = LEX_NUM;
-					lex.value = c-'0';
+					lex.value = c - '0';
+					define_allowed = false;
 				}
 				else
 				if (is_separator(c))
 				{
 					ident.clear();
 					ident.push_back(c);
-					if (c=='=' || c=='!' || c=='<' || c=='>' || c=='/')
+					if (c == '=' || c == '!' || c == '<' || c == '>' || c == '/')
 					{
 						mode = SEPARATOR;
 					}
@@ -650,24 +659,34 @@ void Parser::start()
 						lex.value = -1;
 						lex_list.push(lex);
 					}
+
+					define_allowed = false;
 				}
 				else
-				if (c=='\"')
+				if (c == '\"')
 				{
 					readString(ident);
+
 					lex.lex_type = LEX_STR;
+
 					tmp = tid.find(ident);
+
 					if (tmp==-1)
 						lex.value = tid.push(ident);
 					else
 						lex.value = tmp;
+
 					lex_list.push(lex);
+
+					define_allowed = false;
 				}
 				else
 				if (!is_space(c))
 					throw "Something went wrong / Restricted symbol!";
 				else
+				if (c == '\n')
 					define_allowed = true;
+
 				c = getchar();
 			break;
 			case IDENT:
@@ -745,9 +764,9 @@ void Parser::start()
 						ident.push_back(c);
 						c = getchar();
 					}
-					if (ident.size()==2 || ident[0]!='!')
+					if (ident.size() == 2 || ident[0] != '!')
 					{
-						tmp=findTD(ident);
+						tmp = findTD(ident);
 						if (tmp==-1)
 							throw "Incorrect sepator's combination!";
 						lex.lex_type = td[tmp];
@@ -757,6 +776,7 @@ void Parser::start()
 					else
 						throw "Expected '=' after '!' but got something else!";
 				}
+
 				mode = START;
 			break;
 		}
