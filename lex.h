@@ -26,7 +26,9 @@ enum LexType
 	//Остальное
 	LEX_IDENT, LEX_NUM, LEX_STR,
 	//Служебный элемент перечисления для подсчета кол-ва
-	LEX_LAST
+	LEX_LAST,
+	//ПОЛИЗ
+	POLIZ_GO, POLIZ_FGO, POLIZ_LABEL, POLIZ_ADDRESS
 };
 
 //Структура лексемы
@@ -58,10 +60,13 @@ public:
 class LexList
 {
 	vector<Lex> list;
+	unsigned int position;
 public:
 	LexList() {};
 	~LexList() {};
 	void push(const Lex &lex) {list.push_back(lex);}
+	void pop(LexType &lex) {lex = list.at(position).lex_type; ++position;}
+	void back() {--position;}
 	void print() const;
 	//...
 };
@@ -112,6 +117,8 @@ public:
 	void check()
 	{
 		if (isEmpty())
+			throw "Unexpected error[7]";
+		if (first->was_else)
 			throw "#if-#else disbalance!";
 		first->was_else = true;
 	}
@@ -167,6 +174,8 @@ public:
 	int findTW(const string &) const;
 	int findPP(const string &) const;
 	void print() const;
+	void get_lex(LexType &lex) {lex_list.pop(lex);}
+	void back() {lex_list.back();}
 	//...
 friend bool is_separator(char);
 friend class LexList;
