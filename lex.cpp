@@ -29,17 +29,33 @@ const char * Parser::TD[]={
 void TID::print() const
 {
 	for (int i=0; i<top; ++i)
-		cout << '#' << i << ": " << table[i] << endl;
+		cout << '#' << i << ": " << table.at(i).name << endl;
 }
 
 int TID::find(const string &str) const
 {
-	for (unsigned int i=0; i<table.size(); ++i)
+	for (unsigned int i = 0; i < table.size(); ++i)
+	{
+		if (str.compare(table.at(i).name) == 0)
+			return i;
+	}
+	return -1;
+}
+
+int TSTR::find(const string &str) const
+{
+	for (unsigned int i = 0; i < table.size(); ++i)
 	{
 		if (str.compare(table[i]) == 0)
 			return i;
 	}
 	return -1;
+}
+
+void TSTR::print() const
+{
+	for (int i=0; i<top; ++i)
+		cout << '#' << i << ": " << table[i] << endl;
 }
 
 void LexList::print() const
@@ -76,9 +92,11 @@ void Parser::print() const
 {
 	tid.print();
 	cout << "---------\n";
+	tstr.print();
+	cout << "---------\n";
     lex_list.print();
     cout << "---------\n";
-    for (int i = 0; i < pre_proc_list.size(); ++i)
+    for (unsigned int i = 0; i < pre_proc_list.size(); ++i)
 		cout << pre_proc_list[i].from << "->" << pre_proc_list[i].to << endl;
 }
 
@@ -94,7 +112,7 @@ inline bool is_num(char c)
 
 bool is_separator(char c)
 {
-	for (int i=0; i<SEP_TABLE_SIZE; ++i)
+	for (unsigned int i=0; i<SEP_TABLE_SIZE; ++i)
 		if (c==Parser::TD[i][0])
 			return true;
 	return false;
@@ -133,7 +151,7 @@ void readComment()
 
 int Parser::findTD(const string &str) const
 {
-	for (int i=0; i < SEP_TABLE_SIZE; ++i)
+	for (unsigned int i=0; i < SEP_TABLE_SIZE; ++i)
 		if (str.compare(TD[i]) == 0)
 			return i;
 	return -1;
@@ -141,7 +159,7 @@ int Parser::findTD(const string &str) const
 
 int Parser::findTW(const string &str) const
 {
-	for (int i=0; i < WORDS_TABLE_SIZE; ++i)
+	for (unsigned int i=0; i < WORDS_TABLE_SIZE; ++i)
 		if (str.compare(TW[i]) == 0)
 			return i;
 	return -1;
@@ -149,7 +167,7 @@ int Parser::findTW(const string &str) const
 
 int Parser::findPP(const string &str) const
 {
-    for (int i=0; i < pre_proc_list.size(); ++i)
+    for (unsigned int i=0; i < pre_proc_list.size(); ++i)
 		if (pre_proc_list[i].from.compare(str) == 0)
 			return i;
 	return -1;
@@ -669,10 +687,10 @@ void Parser::start()
 
 					lex.lex_type = LEX_STR;
 
-					tmp = tid.find(ident);
+					tmp = tstr.find(ident);
 
 					if (tmp==-1)
-						lex.value = tid.push(ident);
+						lex.value = tstr.push(ident);
 					else
 						lex.value = tmp;
 

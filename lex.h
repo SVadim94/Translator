@@ -44,16 +44,38 @@ struct Lex
 //Таблица идентификаторов
 class TID
 {
-	vector<string> table;
+	struct ID
+	{
+		string name;
+		bool defined;
+		LexType type;
+		ID() : defined(false), type(LEX_NULL) {}
+	};
+	vector<ID> table;
 	int top;
 public:
 	TID() : top(0) {}
 	~TID() {}
-	int push(string &str) {table.push_back(str); return top++;}
+	int push(string &str) {ID tmp; tmp.name.assign(str); table.push_back(tmp); return top++;}
 	int find(const string &) const;
 	void print() const;
-	string & operator[](int i) {return table.at(i);}
+	bool is_defined(int i) const {return table.at(i).defined;}
+	void define(int i) {table.at(i).defined = true;}
+	void set_type(int i, LexType lex) {table.at(i).type = lex;}
+	LexType get_type(int i) const {return table.at(i).type;}
 	//...
+};
+
+class TSTR
+{
+	vector<string> table;
+	int top;
+public:
+	TSTR(): top(0) {}
+	~TSTR() {}
+	int push(const string &str) {table.push_back(str); return top++;}
+	int find(const string &) const;
+	void print() const;
 };
 
 //Последовательность лексем
@@ -62,11 +84,11 @@ class LexList
 	vector<Lex> list;
 	unsigned int position;
 public:
-	LexList() {};
+	LexList(): position(0) {};
 	~LexList() {};
 	void push(const Lex &lex) {list.push_back(lex);}
 	void pop(LexType &lex) {lex = list.at(position).lex_type; ++position;}
-	void back() {--position;}
+	LexType back() {--position; return list.at(position - 1).lex_type;}
 	void print() const;
 	//...
 };
@@ -149,6 +171,7 @@ class Parser
 
 	LexList lex_list;
 	TID tid;
+	TSTR tstr;
 
 	enum MODE{
 		START,
@@ -173,9 +196,10 @@ public:
 	int findTD(const string &) const;
 	int findTW(const string &) const;
 	int findPP(const string &) const;
+	void check_ident(int i) {if (tid.is_defined(i)) throw "Semanthic error: Redefinition"; else tid.define(i);}
 	void print() const;
 	void get_lex(LexType &lex) {lex_list.pop(lex);}
-	void back() {lex_list.back();}
+	LexType back() {return lex_list.back();}
 	//...
 friend bool is_separator(char);
 friend class LexList;
