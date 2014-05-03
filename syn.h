@@ -1,22 +1,48 @@
+//Оно мне надо?!
 #ifndef SEP_TABLE_SIZE
 #include "lex.h"
 #endif
 
-class Poliz
+class TSTRUCT
 {
-	vector<LexType> poliz;
+	struct FIELD
+	{
+		string name;
+		LexType type;
+		FIELD() {}
+		FIELD(const string &str, LexType lex) : name(str), type(lex) {}
+	};
+
+	struct STRUCT
+	{
+		string name;
+		vector<FIELD> fields;
+		STRUCT() {}
+		explicit STRUCT(const string &str) : name(str) {}
+	};
+
+	vector<STRUCT> table;
 public:
-	LexType operator[](int i) {return poliz.at(i);}
+	void push(const string &str) {STRUCT tmp(str); table.push_back(tmp);}
+	void push_field(const string &str, LexType lex) {FIELD tmp(str, lex); table.back().fields.push_back(tmp);}
+	void print() const;
 	//...
 };
 
 class Analyzer
 {
-	Poliz poliz;
 	LexType lex;
-	Parser *pars;
-
+	LexType block_type; //Уродливый, Б-гомързкий костыль!
+	int pos;
+	TID &tid;
+	TSTR &tstr;
+	LexList &lex_list;
+	TSTRUCT &tstruct;
+	//Метод рекурсивного спуска
 	void PROGRAM();
+	void STRUCTURES();
+    void STRUCTURE();
+    void SDESCRIPTION();
 	void DESCRIPTIONS();
 	void DESCRIPTION();
 	void TYPE();
@@ -38,6 +64,7 @@ class Analyzer
 	void E8();
 	//...
 public:
-	Analyzer(): pars(NULL) {}
-	void start(Parser &);
+	Analyzer(TID &tid, TSTR &tstr, LexList &lex_list, TSTRUCT &tstruct) :
+		pos(-1), tid(tid), tstr(tstr), lex_list(lex_list), tstruct(tstruct) {}
+	void start();
 };

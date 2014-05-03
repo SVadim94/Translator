@@ -41,39 +41,46 @@ struct Lex
 	//...
 };
 
+//Структура идентификатора
+struct ID
+{
+	string name;
+	bool defined;
+	bool initialized;
+	// Для целых чисел - значение, для строк - номер в таблице строк,
+	// а для логического типа 0 или 1
+	int value;
+	LexType type;
+	ID() : defined(false), initialized(false), value(0), type(LEX_NULL) {}
+};
+
 //Таблица идентификаторов
 class TID
 {
-	struct ID
-	{
-		string name;
-		bool defined;
-		LexType type;
-		ID() : defined(false), type(LEX_NULL) {}
-	};
 	vector<ID> table;
-	int top;
 public:
-	TID() : top(0) {}
+	TID() {}
 	~TID() {}
-	int push(string &str) {ID tmp; tmp.name.assign(str); table.push_back(tmp); return top++;}
+	int push(string &str) {ID tmp; tmp.name.assign(str); table.push_back(tmp); return table.size() - 1;}
 	int find(const string &) const;
 	void print() const;
-	bool is_defined(int i) const {return table.at(i).defined;}
-	void define(int i) {table.at(i).defined = true;}
+	bool is_defined(int i) const {return table.at(i).defined;} //Все еще нужна?
+	void define(int i) {if (table.at(i).defined) throw "Syntax error: redifinition"; else table.at(i).defined = true;}
+	void initialize(int i, int value) {table.at(i).initialized = true; table.at(i).value = value;}
 	void set_type(int i, LexType lex) {table.at(i).type = lex;}
 	LexType get_type(int i) const {return table.at(i).type;}
+	const string &get_name(int i) const {return table.at(i).name;}
+
 	//...
 };
 
 class TSTR
 {
 	vector<string> table;
-	int top;
 public:
-	TSTR(): top(0) {}
+	TSTR() {}
 	~TSTR() {}
-	int push(const string &str) {table.push_back(str); return top++;}
+	int push(const string &str) {table.push_back(str); return table.size() - 1;}
 	int find(const string &) const;
 	void print() const;
 };
@@ -82,17 +89,20 @@ public:
 class LexList
 {
 	vector<Lex> list;
-	unsigned int position;
 public:
-	LexList(): position(0) {};
+	LexList() {};
 	~LexList() {};
+	Lex &operator[](int i) {return list.at(i);}
 	void push(const Lex &lex) {list.push_back(lex);}
-	void pop(LexType &lex) {lex = list.at(position).lex_type; ++position;}
-	LexType back() {--position; return list.at(position - 1).lex_type;}
+//	void pop(LexType &lex) {lex = list.at(position).lex_type; ++position;} //Требуется для Лексического анализатора
+	int get_value(int i) {return list[i].value;}
+	LexType get_lex(int i) {return list.at(i).lex_type;}
 	void print() const;
 	//...
 };
 
+
+//Контроль баланса #if-#else-#endif
 class IfElseStack
 {
 	struct Stack
@@ -169,17 +179,11 @@ class Parser
 	static const LexType tw[];
 	static const LexType td[];
 
-	LexList lex_list;
-	TID tid;
-	TSTR tstr;
-
 	enum MODE{
 		START,
 		IDENT,
 		NUM,
 		SEPARATOR,
-		STOP
-		//...
 	} mode;
 
 	struct Define
@@ -187,20 +191,23 @@ class Parser
 		string from;
 		int to;
 	};
+
 	vector<Define> pre_proc_list;
 
 public:
 	Parser(): mode(START) {}
 	~Parser() {}
-	void start();
+	void start(TID &, TSTR &, LexList &);
 	int findTD(const string &) const;
 	int findTW(const string &) const;
 	int findPP(const string &) const;
-	void check_ident(int i) {if (tid.is_defined(i)) throw "Semanthic error: Redefinition"; else tid.define(i);}
-	void print() const;
-	void get_lex(LexType &lex) {lex_list.pop(lex);}
-	LexType back() {return lex_list.back();}
+	void check_ident(TID &tid, int i) {if (tid.is_defined(i)) throw "Semanthic error: Redefinition"; else tid.define(i);}
+	void print(TID &, TSTR &, LexList &) const;
+	//void get_lex(LexList &lex_list, LexType &lex) {lex_list.pop(lex);} кандидат на замену
+	//LexType back() {return lex_list.back();} Аааааналогично
 	//...
 friend bool is_separator(char);
-friend class LexList;
+friend string print_lex(LexType);
 };
+
+string print_lex(LexType);
