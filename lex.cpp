@@ -3,7 +3,7 @@
 const LexType Parser::tw[]={
 	LEX_PROGRAM, LEX_IF, LEX_ELSE, LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
 	LEX_FOR, LEX_WHILE, LEX_BREAK, LEX_GOTO, LEX_READ, LEX_WRITE,
-	LEX_STRUCT,	LEX_INT, LEX_STRING, LEX_NOT, LEX_OR, LEX_AND, LEX_TRUE,
+	LEX_STRUCT, LEX_INT, LEX_STRING, LEX_NOT, LEX_OR, LEX_AND, LEX_TRUE,
 	LEX_FALSE, LEX_BOOL
 };
 
@@ -162,9 +162,9 @@ void Parser::print(TID &tid, TSTR &tstr, LexList &lex_list) const
 	cout << "---------\n";
 	tstr.print();
 	cout << "---------\n";
-    lex_list.print();
-    cout << "---------\n";
-    for (unsigned int i = 0; i < pre_proc_list.size(); ++i)
+	lex_list.print();
+	cout << "---------\n";
+	for (unsigned int i = 0; i < pre_proc_list.size(); ++i)
 		cout << pre_proc_list[i].from << "->" << pre_proc_list[i].to << endl;
 }
 
@@ -186,7 +186,7 @@ int Parser::findTW(const string &str) const
 
 int Parser::findPP(const string &str) const
 {
-    for (unsigned int i=0; i < pre_proc_list.size(); ++i)
+	for (unsigned int i=0; i < pre_proc_list.size(); ++i)
 		if (pre_proc_list[i].from.compare(str) == 0)
 			return i;
 	return -1;
@@ -261,8 +261,8 @@ void Parser::start(TID &tid, TSTR &tstr, LexList &lex_list)
 							c = getchar();
 						}
 
-//						if (findTW(def.from)!=-1) // Служенбное слово?
-//							throw "#define's first argument can't be a function word!";
+//                      if (findTW(def.from)!=-1) // Служенбное слово?
+//                          throw "#define's first argument can't be a function word!";
 
 						def.to = 0;
 
@@ -336,7 +336,7 @@ void Parser::start(TID &tid, TSTR &tstr, LexList &lex_list)
 						tmp = findPP(ident);
 
 						if (tmp != -1)
-                            pre_proc_list.erase(pre_proc_list.begin() + tmp);
+							pre_proc_list.erase(pre_proc_list.begin() + tmp);
 					}
 					else
 					if (ident.compare("ifdef") == 0)
@@ -660,7 +660,7 @@ void Parser::start(TID &tid, TSTR &tstr, LexList &lex_list)
 								if (c != ' ' && c != '\t')
 									throw "Restricted symbol after endif!";
 
-                        stack.pop();
+						stack.pop();
 					}
 					else
 						throw "Wrong directive [3]!";

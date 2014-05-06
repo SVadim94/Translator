@@ -23,8 +23,9 @@ class TSTRUCT
 
 	vector<STRUCT> table;
 public:
-	void push(const string &str) {STRUCT tmp(str); table.push_back(tmp);}
+	int push(const string &str) {STRUCT tmp(str); table.push_back(tmp); return table.size() - 1;}
 	void push_field(const string &str, LexType lex) {FIELD tmp(str, lex); table.back().fields.push_back(tmp);}
+	int find(int, const string &) const; 
 	void print() const;
 	//...
 };
@@ -38,11 +39,12 @@ class Analyzer
 	TSTR &tstr;
 	LexList &lex_list;
 	TSTRUCT &tstruct;
+
 	//Метод рекурсивного спуска
 	void PROGRAM();
 	void STRUCTURES();
-    void STRUCTURE();
-    void SDESCRIPTION();
+	void STRUCTURE();
+	void SDESCRIPTION();
 	void DESCRIPTIONS();
 	void DESCRIPTION();
 	void TYPE();

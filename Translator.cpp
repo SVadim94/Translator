@@ -18,9 +18,9 @@ int main()
 		syn_analyzer.start();
 
 		pars.print(tid, tstr, lex_list);
-        tstruct.print();
+		tstruct.print();
 	}
 	catch(const char * str) {cout << str << endl;}
-	catch(...) {cout << "Unexpected error!";}
-//	catch(...) {cout << "I dunno, lol ¯\\(°_o)/¯";}
+//	catch(...) {cout << "Unexpected error!";}
+	catch(...) {cout << "I dunno, lol ¯\\(°_o)/¯";}
 }

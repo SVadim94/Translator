@@ -64,11 +64,12 @@ public:
 	int push(string &str) {ID tmp; tmp.name.assign(str); table.push_back(tmp); return table.size() - 1;}
 	int find(const string &) const;
 	void print() const;
-	bool is_defined(int i) const {return table.at(i).defined;} //Все еще нужна?
+	bool is_defined(int i) const {return table.at(i).defined;}
 	void define(int i) {if (table.at(i).defined) throw "Syntax error: redifinition"; else table.at(i).defined = true;}
 	void initialize(int i, int value) {table.at(i).initialized = true; table.at(i).value = value;}
+	int get_value(int i) {return table.at(i).value;}
 	void set_type(int i, LexType lex) {table.at(i).type = lex;}
-	LexType get_type(int i) const {return table.at(i).type;}
+	LexType get_type(int i) const {return table.at(i).type;} // Все еще нужна?
 	const string &get_name(int i) const {return table.at(i).name;}
 
 	//...
@@ -114,12 +115,12 @@ class IfElseStack
 	};
 	Stack *first;
 public:
-    IfElseStack(): first(NULL) {}
+	IfElseStack(): first(NULL) {}
 
-    ~IfElseStack()
-    {
-    	Stack *tmp = first;
-    	while (tmp != NULL)
+	~IfElseStack()
+	{
+		Stack *tmp = first;
+		while (tmp != NULL)
 		{
 			tmp = first->next;
 			delete first;
@@ -127,19 +128,19 @@ public:
 		}
 	}
 
-    bool isEmpty() {return first == NULL;}
+	bool isEmpty() {return first == NULL;}
 
-    void push()
-    {
-    	Stack *tmp = new Stack;
-    	tmp->next = first;
-    	first = tmp;
+	void push()
+	{
+		Stack *tmp = new Stack;
+		tmp->next = first;
+		first = tmp;
 	}
 
 	void pop()
 	{
-        Stack *tmp;
-        if (isEmpty())
+		Stack *tmp;
+		if (isEmpty())
 			throw "#if-#endif disbalance!";
 		tmp = first->next;
 		delete first;

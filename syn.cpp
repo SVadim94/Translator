@@ -12,6 +12,15 @@ inline bool oper_begin(const LexType &lex)
 		lex == LEX_LCRO || lex == LEX_LPAR);
 }
 
+int TSTRUCT::find(int i, const string &str) const
+{
+	const STRUCT *str_no_i = &(table.at(i));
+	for (unsigned int j = 0; j < str_no_i->fields.size(); ++j)
+		if (str.compare(str_no_i->fields[j].name) == 0)
+			return j;
+	return -1;
+}
+
 void TSTRUCT::print() const
 {
 	for (unsigned int i = 0; i < table.size(); ++i)
@@ -69,16 +78,16 @@ void Analyzer::STRUCTURES()
 
 void Analyzer::STRUCTURE()
 {
-	int ident_pos;
+	int ident_pos, struct_pos;
 
 	if (lex != LEX_IDENT)
 		throw "Syntax error: Expected identificator";
 
 	ident_pos = lex_list.get_value(pos);
+	struct_pos = tstruct.push(tid.get_name(ident_pos));
 
 	tid.define(ident_pos);
-
-	tstruct.push(tid.get_name(ident_pos));
+	tid.initialize(ident_pos, struct_pos);
 
 	gl();
 
@@ -177,12 +186,17 @@ void Analyzer::TYPE()
 
 void Analyzer::VARIABLE()
 {
-	int ident_pos;
+	int ident_pos, type_pos;
 
 	if (lex != LEX_IDENT)
 		throw "Syntax error: Expected identificator";
 
 	ident_pos = lex_list.get_value(pos);
+	type_pos = lex_list.get_value(pos - 1);
+
+	if (block_type == LEX_STRUCT)
+		tid.initialize(ident_pos, tid.get_value(type_pos));
+
 	tid.define(ident_pos);
 	tid.set_type(ident_pos, block_type);
 
@@ -225,33 +239,58 @@ void Analyzer::CONSTANT()
 
 void Analyzer::STRING()
 {
+	int ident_pos;
+
 	if (lex != LEX_STR)
 		throw "Syntax error: Expected string constant";
 
-	tid.initialize(lex_list.get_value(pos - 2), lex_list.get_value(pos));
+	if (block_type != LEX_STRING)
+		throw "Syntax error: Type mismatch in initialization";
+
+	ident_pos = lex_list.get_value(pos - 2);
+
+	tid.initialize(ident_pos, lex_list.get_value(pos));
+	tid.set_type(ident_pos, block_type);
 
 	gl();
 }
 
 void Analyzer::BOOL()
 {
+	int ident_pos;
+
 	if (lex != LEX_TRUE && lex != LEX_FALSE)
 		throw "Syntax error: Expected boolean";
 
+	if (block_type != LEX_BOOL)
+		throw "Syntax error: Type mismatch in initialization";
+
+	ident_pos = lex_list.get_value(pos - 2);
+
 	if (lex == LEX_TRUE)
-		tid.initialize(lex_list.get_value(pos - 2), 1);
+		tid.initialize(ident_pos, 1);
 	else
-		tid.initialize(lex_list.get_value(pos - 2), 0);
+		tid.initialize(ident_pos, 0);
+
+	tid.set_type(ident_pos, block_type);
 
 	gl();
 }
 
 void Analyzer::INTEGER()
 {
+	int ident_pos;
+
 	if (lex != LEX_NUM)
 		throw "Syntax error: Expected numeric constant";
 
-	tid.initialize(lex_list.get_value(pos - 2), lex_list.get_value(pos));
+	if (block_type != LEX_INT)
+		throw "Syntax error: Type mismatch in initialization";
+
+	ident_pos = lex_list.get_value(pos - 2);
+
+	tid.initialize(ident_pos, lex_list.get_value(pos));
+	tid.set_type(ident_pos, block_type);
 
 	gl();
 }
@@ -321,6 +360,9 @@ void Analyzer::OPERATOR()
 
 			if (lex != LEX_IDENT)
 				throw "Syntax error: Expected identificator";
+			else
+			if (!tid.is_defined(lex_list.get_value(pos)))
+				throw "Syntax error: Undefined identificator";
 
 			gl();
 
@@ -346,7 +388,11 @@ void Analyzer::OPERATOR()
 			EXPRESSION();
 
 			while(lex == LEX_COMMA)
+			{
+				gl();
+
 				EXPRESSION();
+			}
 
 			if (lex != LEX_RPAR)
 				throw "Syntax error: Expected )";
@@ -440,8 +486,6 @@ void Analyzer::OPERATOR()
 
 			OPERATORS();
 
-			gl();
-
 			if (lex != LEX_RCRO)
 				throw "Syntax error: Expected }";
 
@@ -460,6 +504,9 @@ void Analyzer::OPERATOR()
 			else
 			{
 				lex = step_back();
+
+				if (!tid.is_defined(lex_list.get_value(pos)))
+					throw "Syntax error: Undefined identificator";
 
 				EXPRESSION();
 
@@ -521,9 +568,9 @@ void Analyzer::OPERATOR()
 		gl();
 		break;
 		default:
-            EXPRESSION();
+			EXPRESSION();
 
-            if (lex != LEX_SEMICOLON)
+			if (lex != LEX_SEMICOLON)
 				throw "Syntax error: Expected ;";
 
 			gl();
@@ -636,6 +683,8 @@ void Analyzer::E7()
 
 void Analyzer::E8()
 {
+	int ident_pos, type_pos;
+
 	if (lex == LEX_LPAR)
 	{
 		gl();
@@ -651,6 +700,9 @@ void Analyzer::E8()
 
 	if (lex == LEX_IDENT)
 	{
+		if (!tid.is_defined(lex_list.get_value(pos)))
+			throw "Syntax error: Undefined identificator";
+
 		gl();
 
 		if (lex == LEX_DOT)
@@ -659,6 +711,13 @@ void Analyzer::E8()
 
 			if (lex != LEX_IDENT)
 				throw "Syntax error: wrong '.' usage";
+
+// В случае структур в поле value хранится номер записи соответстующего типа в таблице структур
+			type_pos = lex_list.get_value(pos - 2);
+			ident_pos = lex_list.get_value(pos);
+
+			if (tstruct.find(tid.get_value(type_pos), tid.get_name(ident_pos)) == -1)
+				throw "Syntax error: No such field in this structure";
 
 			gl();
 		}
