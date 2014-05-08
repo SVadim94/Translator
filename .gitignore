@@ -1,0 +1,10 @@
+#code::blocks shit
+bin/
+obj/
+*.cbp
+*.depend
+*.layout
+
+#model language extension
+*.mll
+

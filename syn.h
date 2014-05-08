@@ -25,7 +25,7 @@ class TSTRUCT
 public:
 	int push(const string &str) {STRUCT tmp(str); table.push_back(tmp); return table.size() - 1;}
 	void push_field(const string &str, LexType lex) {FIELD tmp(str, lex); table.back().fields.push_back(tmp);}
-	int find(int, const string &) const; 
+	int find(int, const string &) const;
 	void print() const;
 	//...
 };
@@ -39,6 +39,7 @@ class Analyzer
 	TSTR &tstr;
 	LexList &lex_list;
 	TSTRUCT &tstruct;
+	vector<LexType> expression_type_stack;
 
 	//Метод рекурсивного спуска
 	void PROGRAM();
@@ -70,3 +71,11 @@ public:
 		pos(-1), tid(tid), tstr(tstr), lex_list(lex_list), tstruct(tstruct) {}
 	void start();
 };
+
+inline void check_assign(LexType, LexType);
+inline void check_logic(LexType, LexType);
+inline void check_comparison(LexType, LexType);
+inline void check_arithmetic(LexType, LexType, LexType);
+inline void check_not(LexType);
+inline void check_minus(LexType);
+inline bool is_cmp(LexType);
