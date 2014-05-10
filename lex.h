@@ -15,20 +15,20 @@ enum LexType
 {
 	LEX_NULL,
 	//Служебные слова
-	LEX_PROGRAM, LEX_IF, LEX_ELSE, LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
-	LEX_FOR, LEX_WHILE, LEX_BREAK, LEX_GOTO, LEX_READ, LEX_WRITE,
-	LEX_STRUCT,	LEX_INT, LEX_STRING, LEX_NOT, LEX_OR, LEX_AND, LEX_TRUE,
-	LEX_FALSE, LEX_BOOL,
+	LEX_PROGRAM, LEX_IF,    LEX_ELSE,         LEX_SWITCH,    LEX_CASE,       LEX_DEFAULT,
+	LEX_FOR,     LEX_WHILE, LEX_BREAK,        LEX_GOTO,      LEX_READ,       LEX_WRITE,
+	LEX_STRUCT,	 LEX_INT,   LEX_STRING,       LEX_NOT,       LEX_OR,         LEX_AND, LEX_TRUE,
+	LEX_FALSE,   LEX_BOOL,
 	//Разделители
-	LEX_LCRO, LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON,
-	LEX_COMMA, LEX_EQ, LEX_NEQ, LEX_LEQ, LEX_GEQ, LEX_LSS, LEX_GTR,
-	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_DOT, LEX_ASSIGN,
+	LEX_LCRO,  LEX_RCRO,  LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON, LEX_COMMA,
+	LEX_EQ,    LEX_NEQ,   LEX_LEQ,  LEX_GEQ,  LEX_LSS,   LEX_GTR,       LEX_PLUS,
+	LEX_MINUS, LEX_DIV,   LEX_MOD,  LEX_MULT, LEX_DOT,   LEX_ASSIGN,
 	//Остальное
 	LEX_IDENT, LEX_NUM, LEX_STR,
-	//Служебный элемент перечисления для подсчета кол-ва
-	LEX_LAST,
 	//ПОЛИЗ
-	POLIZ_GO, POLIZ_FGO, POLIZ_LABEL, POLIZ_ADDRESS
+	POLIZ_GO, POLIZ_FGO, POLIZ_TGO, POLIZ_LABEL, POLIZ_ADDRESS,
+	//Служебный элемент перечисления для подсчета кол-ва
+	LEX_LAST
 };
 
 //Структура лексемы
@@ -180,6 +180,10 @@ class Parser
 	static const LexType tw[];
 	static const LexType td[];
 
+	TID     &tid;
+	TSTR    &tstr;
+	LexList &lex_list;
+
 	enum MODE{
 		START,
 		IDENT,
@@ -196,17 +200,18 @@ class Parser
 	vector<Define> pre_proc_list;
 
 public:
-	Parser(): mode(START) {}
+	Parser(TID &tid, TSTR &tstr, LexList &lex_list) :
+		tid(tid), tstr(tstr), lex_list(lex_list), mode(START) {}
 	~Parser() {}
-	void start(TID &, TSTR &, LexList &);
+
+	void start();
+
 	int findTD(const string &) const;
 	int findTW(const string &) const;
 	int findPP(const string &) const;
+
 	void check_ident(TID &tid, int i) {if (tid.is_defined(i)) throw "Semanthic error: Redefinition"; else tid.define(i);}
 	void print(TID &, TSTR &, LexList &) const;
-	//void get_lex(LexList &lex_list, LexType &lex) {lex_list.pop(lex);} кандидат на замену
-	//LexType back() {return lex_list.back();} Аааааналогично
-	//...
 friend bool is_separator(char);
 friend string print_lex(LexType);
 };

@@ -77,6 +77,26 @@ string print_lex(LexType lex)
 		return "String constant";
 	break;
 
+	case POLIZ_ADDRESS:
+		return "POLIZ ADDRESS";
+	break;
+
+	case POLIZ_FGO:
+		return "POLIZ FGO";
+	break;
+
+	case POLIZ_GO:
+		return "POLIZ GO";
+	break;
+
+	case POLIZ_LABEL:
+		return "POLIZ LABEL";
+	break;
+
+	case POLIZ_TGO:
+		return "POLIZ TGO";
+	break;
+
 	default:
 		return "I think we need to change head-programmer...";
 	break;
@@ -192,7 +212,7 @@ int Parser::findPP(const string &str) const
 	return -1;
 }
 
-void Parser::start(TID &tid, TSTR &tstr, LexList &lex_list)
+void Parser::start()
 {
 	int tmp;
 	char c;

@@ -6,11 +6,13 @@
 //С этой лексемы может начинаться оператор?
 inline bool oper_begin(const LexType &lex)
 {
-	return (lex == LEX_PLUS || lex == LEX_MINUS || lex == LEX_IF ||
-		lex == LEX_WHILE || lex == LEX_FOR || lex == LEX_READ ||
-		lex == LEX_WRITE || lex == LEX_NUM || lex == LEX_IDENT ||
-		lex == LEX_SWITCH || lex == LEX_BREAK || lex == LEX_GOTO ||
-		lex == LEX_LCRO || lex == LEX_LPAR);
+	return (
+		lex == LEX_PLUS   || lex == LEX_MINUS || lex == LEX_IF    ||
+		lex == LEX_WHILE  || lex == LEX_FOR   || lex == LEX_READ  ||
+		lex == LEX_WRITE  || lex == LEX_NUM   || lex == LEX_IDENT ||
+		lex == LEX_SWITCH || lex == LEX_BREAK || lex == LEX_GOTO  ||
+		lex == LEX_LCRO   || lex == LEX_LPAR
+		);
 }
 
 int TSTRUCT::find(int i, const string &str) const
@@ -30,6 +32,12 @@ void TSTRUCT::print() const
 		for (unsigned int j = 0; j < table[i].fields.size(); ++j)
 			cout << '\t' << table[i].fields[j].name << " : " << print_lex(table[i].fields[j].type) << endl;
 	}
+}
+
+void POLIZ::print() const
+{
+	for (unsigned int i = 0; i < poliz.size(); ++i)
+		cout << '#' << i << ": " << print_lex(poliz[i].lex_type) << " : " << poliz[i].value << endl;
 }
 
 void Analyzer::start()
@@ -180,6 +188,8 @@ void Analyzer::TYPE()
 
 		if (lex != LEX_IDENT)
 			throw "Syntax error: Expected identificator";
+
+		struct_block_type = lex_list.get_value(pos);
 	}
 
 	gl();
@@ -187,16 +197,15 @@ void Analyzer::TYPE()
 
 void Analyzer::VARIABLE()
 {
-	int ident_pos, type_pos;
+	int ident_pos;
 
 	if (lex != LEX_IDENT)
 		throw "Syntax error: Expected identificator";
 
 	ident_pos = lex_list.get_value(pos);
-	type_pos = lex_list.get_value(pos - 1);
 
 	if (block_type == LEX_STRUCT)
-		tid.initialize(ident_pos, tid.get_value(type_pos));
+		tid.initialize(ident_pos, struct_block_type);
 
 	tid.define(ident_pos);
 	tid.set_type(ident_pos, block_type);
@@ -306,7 +315,10 @@ void Analyzer::OPERATORS()
 
 void Analyzer::OPERATOR()
 {
-	int op;
+	LexType op;
+	unsigned int label_index;
+	unsigned int target_index;
+	int ident_pos;
 
 	switch(lex)
 	{
@@ -328,6 +340,17 @@ void Analyzer::OPERATOR()
 			if (op != LEX_BOOL && op != LEX_TRUE && op != LEX_FALSE)
 				throw "Semantic error: Expected boolean as 'if' argument";
 
+			lexeme.lex_type = POLIZ_LABEL;
+			lexeme.value    = -1; // Заполнить потом!!!
+			label_index     = poliz.push(lexeme);
+
+			poliz.label_push(label_index);
+
+			lexeme.lex_type = POLIZ_FGO;
+			lexeme.value    = -1; //Ни оптимизации ради, а токмо в силу связавших меня обязательств по соблюдению логики программы...
+
+			poliz.push(lexeme);
+
 			gl();
 
 			OPERATOR();
@@ -335,9 +358,33 @@ void Analyzer::OPERATOR()
 			if (lex != LEX_ELSE)
 				throw "Syntax error: Expected 'else'";
 
+			lexeme.lex_type = POLIZ_LABEL;
+			lexeme.value    = -1;
+			label_index     = poliz.push(lexeme);
+
+			poliz.label_push(label_index);
+
+			lexeme.lex_type = POLIZ_GO;
+			lexeme.value    = -1;
+
+			poliz.push(lexeme);
+
 			gl();
 
 			OPERATOR();
+
+			target_index               = poliz.current();
+
+			label_index                = poliz.label_pop();
+			poliz[label_index].value   = target_index; // Теперь ссылки указывают на ';'
+
+			label_index                = poliz.label_pop();
+			poliz[label_index].value   = target_index; // Обе ссылки...
+
+			lexeme.lex_type = LEX_SEMICOLON;
+			lexeme.value    = -1;
+			
+			poliz.push(lexeme);
 		break;
 
 		case LEX_WHILE:
@@ -347,6 +394,8 @@ void Analyzer::OPERATOR()
 				throw "Syntax error: Expected (";
 
 			gl();
+
+			target_index = poliz.current();
 
 			EXPRESSION();
 
@@ -358,9 +407,38 @@ void Analyzer::OPERATOR()
 			if (op != LEX_BOOL && op != LEX_TRUE && op != LEX_FALSE)
 				throw "Semantic error: Expected boolean as 'while' argument";
 
+			lexeme.lex_type = POLIZ_LABEL;
+			lexeme.value    = -1; // На конец!
+			label_index     = poliz.push(lexeme);
+
+			poliz.label_push(label_index);
+
+			lexeme.lex_type = POLIZ_FGO;
+			lexeme.value    = -1;
+
+			poliz.push(lexeme);
+
 			gl();
 
 			OPERATOR();
+
+			lexeme.lex_type = POLIZ_LABEL;
+			lexeme.value    = target_index;
+
+			poliz.push(lexeme);
+
+			lexeme.lex_type = POLIZ_GO;
+			lexeme.value    = -1;
+
+			poliz.push(lexeme);
+
+			target_index             = poliz.current();
+			label_index              = poliz.label_pop();
+			poliz[label_index].value = target_index;
+
+			lexeme.lex_type = LEX_SEMICOLON; //Подумай о целесообразности этой штуковины
+			lexeme.value    = -1;
+			poliz.push(lexeme);
 		break;
 
 		case LEX_READ:
@@ -371,26 +449,40 @@ void Analyzer::OPERATOR()
 
 			gl();
 
+			ident_pos = lex_list.get_value(pos);
+
 			if (lex != LEX_IDENT)
 				throw "Syntax error: Expected identificator";
 			else
-			if (!tid.is_defined(lex_list.get_value(pos)))
+			if (!tid.is_defined(ident_pos))
 				throw "Syntax error: Undefined identificator";
 
-			op = tid.get_type(lex_list.get_value(pos));
+			op = tid.get_type(ident_pos);
 
 			if (op != LEX_INT && op != LEX_STRING)
 				throw "Semantic error: Expected integer/string variable";
+
+			poliz.push(lex_list[pos]);
 
 			gl();
 
 			if (lex != LEX_RPAR)
 				throw "Syntax error: Expected )";
 
+			lexeme.lex_type = LEX_READ;
+			lexeme.value    = -1;
+
+			poliz.push(lexeme);
+
 			gl();
 
 			if (lex != LEX_SEMICOLON)
 				throw "Syntax error: Expected ;";
+
+			lexeme.lex_type = LEX_SEMICOLON;
+			lexeme.value    = -1;
+
+			poliz.push(lexeme);
 
 			gl();
 		break;
@@ -633,7 +725,8 @@ void Analyzer::OPERATOR()
 
 void Analyzer::EXPRESSION()
 {
-	LexType op1, op2;
+	LexType  op1, op2;
+	unsigned int assign_count = 0;
 
 	E1();
 
@@ -641,7 +734,16 @@ void Analyzer::EXPRESSION()
 
 	while(lex == LEX_ASSIGN)
 	{
+		poliz.pop();
+
+		lexeme.lex_type = POLIZ_ADDRESS;
+		lexeme.value    = lex_list.get_value(pos - 1); //Номер в ТИД
+
+		poliz.push(lexeme);
+
 		gl();
+
+		++assign_count;
 
 		E1();
 
@@ -650,12 +752,15 @@ void Analyzer::EXPRESSION()
 		check_assign(op1, op2);
 	}
 
-	expression_type_stack.push_back(op1);
+	lexeme.lex_type = LEX_ASSIGN;
+	lexeme.value    = -1;
 
-//	if (lex != LEX_SEMICOLON)
-//		throw "Syntax error: Expected ;";
-//
-//	gl();
+	for (unsigned int i = 0; i < assign_count; ++i)
+	{
+		poliz.push(lexeme);
+	}
+
+	expression_type_stack.push_back(op1);
 }
 
 void Analyzer::E1()
@@ -675,6 +780,11 @@ void Analyzer::E1()
 		op2 = pop_op();
 
 		check_logic(op1, op2);
+
+		lexeme.lex_type = LEX_OR;
+		lexeme.value    = -1;
+
+		poliz.push(lexeme);
 	}
 
 	expression_type_stack.push_back(op1);
@@ -697,6 +807,11 @@ void Analyzer::E2()
 		op2 = pop_op();
 
 		check_logic(op1, op2);
+
+		lexeme.lex_type = LEX_AND;
+		lexeme.value    = -1;
+
+		poliz.push(lexeme);
 	}
 
 	expression_type_stack.push_back(op1);
@@ -714,6 +829,9 @@ void Analyzer::E3()
 	{
 		do
 		{
+			lexeme.lex_type = lex;
+			lexeme.value    = -1;
+
 			gl();
 
 			E4();
@@ -721,6 +839,8 @@ void Analyzer::E3()
 			op2 = pop_op();
 
 			check_comparison(op1, op2);
+
+			poliz.push(lexeme);
 
 			expression_type_stack.push_back(LEX_TRUE); //Не важно true или false. Главное, логическая константа
 		}
@@ -749,6 +869,11 @@ void Analyzer::E4()
 		op2 = pop_op();
 
 		check_arithmetic(op1, op2, op_type);
+
+		lexeme.lex_type = op_type;
+		lexeme.value    = -1;
+
+		poliz.push(lexeme);
 	}
 
 	expression_type_stack.push_back(op1);
@@ -773,6 +898,11 @@ void Analyzer::E5()
 		op2 = pop_op();
 
 		check_arithmetic(op1, op2, op_type);
+
+		lexeme.lex_type = op_type;
+		lexeme.value    = -1;
+
+		poliz.push(lexeme);
 	}
 
 	expression_type_stack.push_back(op1);
@@ -791,6 +921,11 @@ void Analyzer::E6()
 		op1 = pop_op();
 
 		check_not(op1);
+
+		lexeme.lex_type = LEX_NOT;
+		lexeme.value    = -1;
+
+		poliz.push(lexeme);
 
 		expression_type_stack.push_back(op1);
 	}
@@ -812,6 +947,11 @@ void Analyzer::E7()
 
 		check_minus(op1);
 
+		lexeme.lex_type = LEX_MINUS;
+		lexeme.value    = -1;
+
+		poliz.push(lexeme);
+
 		expression_type_stack.push_back(op1);
 	}
 	else
@@ -820,7 +960,14 @@ void Analyzer::E7()
 
 void Analyzer::E8()
 {
-	int ident_pos, type_pos;
+	int ident_pos  = 0; // Позиция лексемы в ТИД
+	int type_pos   = 0; // Позиция переменной-структуры в ТИД
+	int struct_pos = 0; // Позиция переменной структуры в таблице структур
+	int field_pos  = 0; // Позиция поля в таблице структур
+	int tid_pos    = 0; // Позиция поля в ТИД
+
+	LexType type;
+	string field_name;
 
 	if (lex == LEX_LPAR)
 	{
@@ -851,24 +998,47 @@ void Analyzer::E8()
 					throw "Syntax error: wrong '.' usage";
 
 // В случае структур в поле value хранится номер записи соответстующего типа в таблице структур
-				type_pos = lex_list.get_value(pos - 2);
-				ident_pos = lex_list.get_value(pos);
+				type_pos   = lex_list.get_value(pos - 2);
+				ident_pos  = lex_list.get_value(pos);
+				struct_pos = tid.get_value(type_pos);
+				field_pos  = tstruct.find(struct_pos, tid.get_name(ident_pos));
 
-				if (tstruct.find(tid.get_value(type_pos), tid.get_name(ident_pos)) == -1)
+				if (field_pos == -1)
 					throw "Syntax error: No such field in this structure";
 
-				expression_type_stack.push_back(tid.get_type(ident_pos));
+				type       = tstruct[struct_pos].fields[field_pos].type;
+				field_name = tid.get_name(type_pos) + "." + tstruct[struct_pos].fields[field_pos].name;
+
+				if ((tid_pos = tid.find(field_name)) == -1)
+				{
+					tid_pos = tid.push(field_name);
+					tid.set_type(tid_pos, type);
+				}
+
+				lexeme.lex_type = type;
+				lexeme.value    = tid_pos;
+
+				poliz.push(lexeme);
+
+				expression_type_stack.push_back(type);
 
 				gl();
 			}
 			else
+			{
+				poliz.push(lex_list[pos - 1]);
 				expression_type_stack.push_back(tid.get_type(lex_list.get_value(pos - 1)));
+			}
 		break;
+
 		case LEX_RPAR:
 			//Wow, such handy...
 			gl();
 		break;
+
 		default:
+			poliz.push(lex_list[pos]);
+
 			expression_type_stack.push_back(lex);
 
 			gl();
