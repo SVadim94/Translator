@@ -46,24 +46,23 @@ public:
 	//...
 };
 
-/*class TFIELDS
+/*class SWITCH_STACK
 {
-	vector<string> s;
-	vector<int>    i;
-	vector<bool>   b;
+	vector<int> stack;
 public:
-	string  get_string (int pos) const {return s.at(pos);}
-	bool    get_bool   (int pos) const {return b.at(pos);}
-	int     get_int    (int pos) const {return i.at(pos);}
+	void push (int i) {stack.push_back(i);}
+	void pop  ()      {stack.pop_back();}
+	int  last ()      {return stack.back();}
+};
+*/
 
-	void  set_string (int j, const string &sVar) {s.at(j).assign(sVar);}
-	void  set_bool   (int j, bool bVar)          {b.at(j) = bVar;}
-	void  set_int    (int j, int  iVar)          {i.at(j) = iVar;}
-
-	int  push_string  (const string &sVar)  {s.push_back(sVar); return s.size() - 1;}
-	int  push_bool    (bool bVar)           {b.push_back(bVar); return b.size() - 1;}
-	int  push_int     (int iVar)            {i.push_back(iVar); return i.size() - 1;}
-};*/
+class BREAK_STACK
+{
+	vector<unsigned int> stack;
+	bool break_allowed;
+public:
+	allow()
+};
 
 class Analyzer
 {

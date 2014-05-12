@@ -15,14 +15,14 @@ enum LexType
 {
 	LEX_NULL,
 	//Служебные слова
-	LEX_PROGRAM, LEX_IF,    LEX_ELSE,         LEX_SWITCH,    LEX_CASE,       LEX_DEFAULT,
-	LEX_FOR,     LEX_WHILE, LEX_BREAK,        LEX_GOTO,      LEX_READ,       LEX_WRITE,
-	LEX_STRUCT,	 LEX_INT,   LEX_STRING,       LEX_NOT,       LEX_OR,         LEX_AND, LEX_TRUE,
-	LEX_FALSE,   LEX_BOOL,
+	LEX_PROGRAM, LEX_IF,    LEX_ELSE,   LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
+	LEX_FOR,     LEX_WHILE, LEX_BREAK,  LEX_GOTO,   LEX_READ, LEX_WRITE,
+	LEX_STRUCT,	 LEX_INT,   LEX_STRING, LEX_NOT,    LEX_OR,   LEX_AND, 
+	LEX_LABEL,   LEX_TRUE,	LEX_FALSE,  LEX_BOOL,
 	//Разделители
-	LEX_LCRO,  LEX_RCRO,  LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON, LEX_COMMA,
-	LEX_EQ,    LEX_NEQ,   LEX_LEQ,  LEX_GEQ,  LEX_LSS,   LEX_GTR,       LEX_PLUS,
-	LEX_MINUS, LEX_DIV,   LEX_MOD,  LEX_MULT, LEX_DOT,   LEX_ASSIGN,
+	LEX_LCRO,  LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON, LEX_COMMA,
+	LEX_EQ,    LEX_NEQ,  LEX_LEQ,  LEX_GEQ,  LEX_LSS,   LEX_GTR,       LEX_PLUS,
+	LEX_MINUS, LEX_DIV,  LEX_MOD,  LEX_MULT, LEX_DOT,   LEX_ASSIGN,
 	//Остальное
 	LEX_IDENT, LEX_NUM, LEX_STR,
 	//ПОЛИЗ
@@ -44,12 +44,11 @@ struct Lex
 //Структура идентификатора
 struct ID
 {
-	string name;
-	bool defined;
-	bool initialized;
-	// Для целых чисел - значение, для строк - номер в таблице строк,
-	// а для логического типа 0 или 1
-	int value;
+	string  name;
+	bool    defined;
+	bool    initialized;
+	int     value; /*Для целых чисел - значение, для строк - номер
+	в таблице строк, а для логического типа 0 или 1*/
 	LexType type;
 	ID() : defined(false), initialized(false), value(0), type(LEX_NULL) {}
 };
@@ -61,17 +60,16 @@ class TID
 public:
 	TID() {}
 	~TID() {}
-	int push(string &str) {ID tmp; tmp.name.assign(str); table.push_back(tmp); return table.size() - 1;}
-	int find(const string &) const;
-	void print() const;
-	bool is_defined(int i) const {return table.at(i).defined;}
-	void define(int i) {if (table.at(i).defined) throw "Syntax error: redifinition"; else table.at(i).defined = true;}
-	void initialize(int i, int value) {table.at(i).initialized = true; table.at(i).value = value;}
-	int get_value(int i) {return table.at(i).value;}
-	void set_type(int i, LexType lex) {table.at(i).type = lex;}
-	LexType get_type(int i) const {return table.at(i).type;} // Все еще нужна?
-	const string &get_name(int i) const {return table.at(i).name;}
-
+	const string &get_name   (int i)          const  {return table.at(i).name;}
+	      int     push       (string &str)           {ID tmp; tmp.name.assign(str); table.push_back(tmp); return table.size() - 1;}
+	      int     find       (const string &) const;
+	      void    print      ()               const;
+	      bool    is_defined (int i)          const  {return table.at(i).defined;}
+	      void    define     (int i)                 {if (table.at(i).defined) throw "Syntax error: redifinition"; else table.at(i).defined = true;}
+	      void    initialize (int i, int value)      {table.at(i).initialized = true; table.at(i).value = value;}
+	      int     get_value  (int i)                 {return table.at(i).value;}
+	      void    set_type   (int i, LexType lex)    {table.at(i).type = lex;}
+	      LexType get_type   (int i)          const  {return table.at(i).type;} // Все еще нужна?
 	//...
 };
 
@@ -81,9 +79,9 @@ class TSTR
 public:
 	TSTR() {}
 	~TSTR() {}
-	int push(const string &str) {table.push_back(str); return table.size() - 1;}
-	int find(const string &) const;
-	void print() const;
+	int  push  (const string &str) {table.push_back(str); return table.size() - 1;}
+	int  find  (const string &)    const;
+	void print ()                  const;
 };
 
 //Последовательность лексем
@@ -93,12 +91,11 @@ class LexList
 public:
 	LexList() {};
 	~LexList() {};
-	Lex &operator[](int i) {return list.at(i);}
-	void push(const Lex &lex) {list.push_back(lex);}
-//	void pop(LexType &lex) {lex = list.at(position).lex_type; ++position;} //Требуется для Лексического анализатора
-	int get_value(int i) {return list[i].value;}
-	LexType get_lex(int i) {return list.at(i).lex_type;}
-	void print() const;
+	Lex    &operator[] (int i)          {return list.at(i);}
+	void    push       (const Lex &lex) {list.push_back(lex);}
+	int     get_value  (int i)          {return list[i].value;}
+	LexType get_lex    (int i)          {return list.at(i).lex_type;}
+	void    print      ()               const;
 	//...
 };
 
@@ -108,8 +105,8 @@ class IfElseStack
 {
 	struct Stack
 	{
-		bool was_else;
-		bool ignore_point;
+		bool   was_else;
+		bool   ignore_point;
 		Stack *next;
 		Stack(): was_else(false), ignore_point(false) {}
 	};
@@ -133,8 +130,8 @@ public:
 	void push()
 	{
 		Stack *tmp = new Stack;
-		tmp->next = first;
-		first = tmp;
+		tmp->next  = first;
+		first      = tmp;
 	}
 
 	void pop()
@@ -142,6 +139,7 @@ public:
 		Stack *tmp;
 		if (isEmpty())
 			throw "#if-#endif disbalance!";
+
 		tmp = first->next;
 		delete first;
 		first = tmp;
@@ -151,8 +149,10 @@ public:
 	{
 		if (isEmpty())
 			throw "Unexpected error[7]";
+
 		if (first->was_else)
 			throw "#if-#else disbalance!";
+
 		first->was_else = true;
 	}
 
@@ -160,13 +160,15 @@ public:
 	{
 		if (isEmpty())
 			throw "Undefined error!";
+
 		return first->ignore_point;
 	}
 
 	void ignore()
 	{
 		if (isEmpty())
-			throw "Undefinef error! [2]";
+			throw "Undefined error! [2]";
+
 		first->ignore_point = true;
 	}
 };

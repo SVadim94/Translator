@@ -144,6 +144,8 @@ void Analyzer::SDESCRIPTION()
 
 	ident_pos = lex_list.get_value(pos);
 
+	tid.set_type(ident_pos, LEX_LAST); //Носит флаговый характер
+
 	tstruct.push_field(tid.get_name(ident_pos), lex_list.get_lex(pos - 1));
 
 	gl();
@@ -316,9 +318,16 @@ void Analyzer::OPERATORS()
 void Analyzer::OPERATOR()
 {
 	LexType op;
-	unsigned int label_index;
-	unsigned int target_index;
-	int ident_pos;
+
+	//label_index_i
+	unsigned int lab_i_1 = 0, lab_i_2 = 0;
+	unsigned int lab_i_3 = 0, lab_i_4 = 0;
+
+	//target_index_i
+	unsigned int tar_i_1 = 0, tar_i_2 = 0;
+	unsigned int tar_i_3 = 0, tar_i_4 = 0;
+
+	int ident_pos, write_argc = 0;
 
 	switch(lex)
 	{
@@ -342,9 +351,7 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = POLIZ_LABEL;
 			lexeme.value    = -1; // Заполнить потом!!!
-			label_index     = poliz.push(lexeme);
-
-			poliz.label_push(label_index);
+			lab_i_1         = poliz.push(lexeme);
 
 			lexeme.lex_type = POLIZ_FGO;
 			lexeme.value    = -1; //Ни оптимизации ради, а токмо в силу связавших меня обязательств по соблюдению логики программы...
@@ -360,9 +367,7 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = POLIZ_LABEL;
 			lexeme.value    = -1;
-			label_index     = poliz.push(lexeme);
-
-			poliz.label_push(label_index);
+			lab_i_2         = poliz.push(lexeme);
 
 			lexeme.lex_type = POLIZ_GO;
 			lexeme.value    = -1;
@@ -373,17 +378,12 @@ void Analyzer::OPERATOR()
 
 			OPERATOR();
 
-			target_index               = poliz.current();
-
-			label_index                = poliz.label_pop();
-			poliz[label_index].value   = target_index; // Теперь ссылки указывают на ';'
-
-			label_index                = poliz.label_pop();
-			poliz[label_index].value   = target_index; // Обе ссылки...
+			tar_i_1                    = poliz.current();
+			poliz[lab_i_1].value       = tar_i_1; // Теперь ссылки указывают на ';'
+			poliz[lab_i_2].value       = tar_i_1; // Обе ссылки...
 
 			lexeme.lex_type = LEX_SEMICOLON;
 			lexeme.value    = -1;
-			
 			poliz.push(lexeme);
 		break;
 
@@ -395,7 +395,7 @@ void Analyzer::OPERATOR()
 
 			gl();
 
-			target_index = poliz.current();
+			tar_i_2 = poliz.current();
 
 			EXPRESSION();
 
@@ -409,9 +409,7 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = POLIZ_LABEL;
 			lexeme.value    = -1; // На конец!
-			label_index     = poliz.push(lexeme);
-
-			poliz.label_push(label_index);
+			lab_i_1         = poliz.push(lexeme);
 
 			lexeme.lex_type = POLIZ_FGO;
 			lexeme.value    = -1;
@@ -423,7 +421,7 @@ void Analyzer::OPERATOR()
 			OPERATOR();
 
 			lexeme.lex_type = POLIZ_LABEL;
-			lexeme.value    = target_index;
+			lexeme.value    = tar_i_2;
 
 			poliz.push(lexeme);
 
@@ -432,9 +430,8 @@ void Analyzer::OPERATOR()
 
 			poliz.push(lexeme);
 
-			target_index             = poliz.current();
-			label_index              = poliz.label_pop();
-			poliz[label_index].value = target_index;
+			tar_i_1                  = poliz.current();
+			poliz[lab_i_1].value     = tar_i_1;
 
 			lexeme.lex_type = LEX_SEMICOLON; //Подумай о целесообразности этой штуковины
 			lexeme.value    = -1;
@@ -499,6 +496,8 @@ void Analyzer::OPERATOR()
 
 			pop_op();
 
+			++write_argc;
+
 			while(lex == LEX_COMMA)
 			{
 				gl();
@@ -506,6 +505,8 @@ void Analyzer::OPERATOR()
 				EXPRESSION();
 
 				pop_op();
+
+				++write_argc;
 			}
 
 			if (lex != LEX_RPAR)
@@ -513,13 +514,28 @@ void Analyzer::OPERATOR()
 
 			gl();
 
+			lexeme.lex_type = LEX_NUM;
+			lexeme.value    = write_argc;
+			poliz.push(lexeme);
+
+			lexeme.lex_type = LEX_WRITE;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
 			if (lex != LEX_SEMICOLON)
 				throw "Syntax error: Expected ;";
+
+			lexeme.lex_type = LEX_SEMICOLON;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
 
 			gl();
 		break;
 
 		case LEX_SWITCH:
+/*Используется стек меток, наверное...
+Короче, время покажет...
+*/
 			gl();
 
 			if (lex != LEX_LPAR)
@@ -616,6 +632,15 @@ void Analyzer::OPERATOR()
 
 			if (lex == LEX_COLON)
 			{
+				ident_pos = lex_list.get_value(pos);
+
+				if (tid.is_defined(ident_pos))
+					throw "Semantic error: duplicate label!";
+
+				tid.set_type(ident_pos, LEX_LABEL);
+				tid.define(ident_pos);
+				tid.initialize(ident_pos, poliz.current());
+
 				gl();
 
 				OPERATOR();
@@ -633,6 +658,10 @@ void Analyzer::OPERATOR()
 
 				if (lex != LEX_SEMICOLON)
 					throw "Syntax error: Expected ;";
+
+				lexeme.lex_type = LEX_SEMICOLON;
+				lexeme.value    = -1;
+				poliz.push(lexeme);
 
 				gl();
 			}
@@ -656,6 +685,12 @@ void Analyzer::OPERATOR()
 					throw "Syntax error: Expected ;";
 			}
 
+			lexeme.lex_type = LEX_SEMICOLON;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
+			tar_i_3 = poliz.current();
+
 			gl();
 
 			if (lex != LEX_SEMICOLON)
@@ -671,7 +706,29 @@ void Analyzer::OPERATOR()
 					throw "Syntax error: Expected ;";
 			}
 
+			lexeme.lex_type = LEX_SEMICOLON;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
+			lexeme.lex_type = POLIZ_LABEL;
+			lexeme.value    = -1;
+			lab_i_1         = poliz.push(lexeme);
+
+			lexeme.lex_type = POLIZ_FGO;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
+			lexeme.lex_type = POLIZ_LABEL;
+			lexeme.value    = -1;
+			lab_i_2         = poliz.push(lexeme);
+
+			lexeme.lex_type = POLIZ_GO;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
 			gl();
+
+			tar_i_4 = poliz.current();
 
 			if (lex != LEX_RPAR)
 			{
@@ -683,9 +740,36 @@ void Analyzer::OPERATOR()
 					throw "Syntax error: Expected )";
 			}
 
+			lexeme.lex_type = POLIZ_LABEL;
+			lexeme.value    = -1;
+			lab_i_3         = poliz.push(lexeme);
+
+			lexeme.lex_type = POLIZ_GO;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
 			gl();
 
+			tar_i_2 = poliz.current();
+
 			OPERATOR();
+
+			lexeme.lex_type = POLIZ_LABEL;
+			lexeme.value    = -1;
+			lab_i_4         = poliz.push(lexeme);
+
+			lexeme.lex_type = POLIZ_GO;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
+			lexeme.lex_type = LEX_SEMICOLON;
+			lexeme.value    = -1;
+			tar_i_1	        = poliz.push(lexeme);
+
+			poliz[lab_i_1].value = tar_i_1;
+			poliz[lab_i_2].value = tar_i_2;
+			poliz[lab_i_3].value = tar_i_3;
+			poliz[lab_i_4].value = tar_i_4;
 		break;
 
 		case LEX_BREAK:
@@ -703,12 +787,27 @@ void Analyzer::OPERATOR()
 
 			if (lex != LEX_IDENT)
 				throw "Syntax error: Expected identificator";
-		gl();
 
-		if (lex != LEX_SEMICOLON)
-			throw "Syntax error: Expected ;";
+			ident_pos = lex_list.get_value(pos);
 
-		gl();
+			if (tid.get_type(ident_pos) != LEX_NULL && // Ссылка вперед?
+				tid.get_type(ident_pos) != LEX_LABEL)
+					throw "Syntax error: no such label";
+
+			lexeme.lex_type = LEX_LABEL;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
+			lexeme.lex_type = LEX_GOTO;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
+			gl();
+
+			if (lex != LEX_SEMICOLON)
+				throw "Syntax error: Expected ;";
+
+			gl();
 		break;
 		default:
 			EXPRESSION();
@@ -717,6 +816,10 @@ void Analyzer::OPERATOR()
 
 			if (lex != LEX_SEMICOLON)
 				throw "Syntax error: Expected ;";
+
+			lexeme.lex_type = LEX_SEMICOLON;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
 
 			gl();
 		break;
