@@ -2,16 +2,17 @@
 #ifndef SEP_TABLE_SIZE
 #include "lex.h"
 #endif
+#define uint unsigned int
 
 class POLIZ
 {
 	vector<Lex> poliz;
-	vector<unsigned int> labels;
+	vector<uint> labels;
 public:
-	unsigned int  push       (Lex lex)               {poliz.push_back(lex); return poliz.size() - 1;}
-	unsigned int  label_pop  ()                      {unsigned int tmp = labels.back(); labels.pop_back(); return tmp;}
-	unsigned int  current    ()                      {return poliz.size();} // Сюда пока писать нельзя!
-	void          label_push (unsigned int lb_index) {labels.push_back(lb_index);}
+	uint  push       (Lex lex)               {poliz.push_back(lex); return poliz.size() - 1;}
+	uint  label_pop  ()                      {uint tmp = labels.back(); labels.pop_back(); return tmp;}
+	uint  current    ()                      {return poliz.size();} // Сюда пока писать нельзя!
+	void          label_push (uint lb_index) {labels.push_back(lb_index);}
 	void          print      () const;
 	Lex          &operator[] (int i)                 {return poliz.at(i);}
 	Lex           pop        ()                      {Lex tmp = poliz.back(); poliz.pop_back(); return tmp;}
@@ -58,10 +59,26 @@ public:
 
 class BREAK_STACK
 {
-	vector<unsigned int> stack;
+	vector<uint> stack;
 	bool break_allowed;
 public:
-	allow()
+    BREAK_STACK () : break_allowed(false) {}
+	// Кладет -1 ~ 0xFFFF... как разделитель кадра стека текущего цикла/switch'a
+	void allow  ()        {break_allowed = true; stack.push_back(-1);}
+	// Позиция незаполненного break'a в ПОЛИЗЕ
+	void push   (uint i)  {stack.push_back(i);}
+	// Запрет break'a в условиях while / for / switch
+	void forbid ()        {break_allowed = false;}
+
+	int pop()
+	{
+		uint tmp = stack.back();
+		stack.pop_back();
+		if (stack.size() == 0)
+			break_allowed = false;
+		return tmp;
+	}
+	bool is_allowed() {return break_allowed;}
 };
 
 class Analyzer
@@ -77,6 +94,8 @@ class Analyzer
 	LexList  &lex_list;
 	TSTRUCT  &tstruct;
 	POLIZ    &poliz;
+
+	BREAK_STACK break_stack;
 
 	vector<LexType> expression_type_stack;
 

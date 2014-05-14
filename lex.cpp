@@ -1,29 +1,29 @@
 #include "lex.h"
 
 const LexType Parser::tw[]={
-	LEX_PROGRAM, LEX_IF, LEX_ELSE, LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
-	LEX_FOR, LEX_WHILE, LEX_BREAK, LEX_GOTO, LEX_READ, LEX_WRITE,
-	LEX_STRUCT, LEX_INT, LEX_STRING, LEX_NOT, LEX_OR, LEX_AND, LEX_TRUE,
-	LEX_FALSE, LEX_BOOL
+	LEX_PROGRAM, LEX_IF,    LEX_ELSE,   LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
+	LEX_FOR,     LEX_WHILE, LEX_BREAK,  LEX_GOTO,   LEX_READ, LEX_WRITE,
+	LEX_STRUCT,	 LEX_INT,   LEX_STRING, LEX_NOT,    LEX_OR,   LEX_AND,
+	LEX_LABEL,   LEX_TRUE,	LEX_FALSE,  LEX_BOOL
 };
 
 const LexType Parser::td[]={
-	LEX_LCRO, LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON,
-	LEX_COMMA, LEX_EQ, LEX_NEQ, LEX_LEQ, LEX_GEQ, LEX_LSS, LEX_GTR,
-	LEX_PLUS, LEX_MINUS, LEX_DIV, LEX_MOD, LEX_MULT, LEX_DOT, LEX_ASSIGN
+	LEX_LCRO,  LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON, LEX_COMMA,
+	LEX_EQ,    LEX_NEQ,  LEX_LEQ,  LEX_GEQ,  LEX_LSS,   LEX_GTR,       LEX_PLUS,
+	LEX_MINUS, LEX_DIV,  LEX_MULT, LEX_DOT,   LEX_ASSIGN
 };
 
 const char * Parser::TW[]={
 	"program", "if", "else", "switch", "case", "default",
 	"for", "while", "break", "goto", "read", "write",
-	"struct", "int", "string", "not", "or", "and", "true",
-	"false", "bool"
+	"struct", "int", "string", "not", "or", "and", "label",
+	"true",	"false", "bool"
 };
 
 const char * Parser::TD[]={
 	"{", "}", "(", ")", ":", ";",
 	",", "==", "!=", "<=", ">=", "<", ">",
-	"+", "-", "/", "%", "*", ".", "="
+	"+", "-", "/", "*", ".", "="
 };
 
 inline bool is_alpha(char c)

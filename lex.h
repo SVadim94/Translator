@@ -17,12 +17,12 @@ enum LexType
 	//Служебные слова
 	LEX_PROGRAM, LEX_IF,    LEX_ELSE,   LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
 	LEX_FOR,     LEX_WHILE, LEX_BREAK,  LEX_GOTO,   LEX_READ, LEX_WRITE,
-	LEX_STRUCT,	 LEX_INT,   LEX_STRING, LEX_NOT,    LEX_OR,   LEX_AND, 
+	LEX_STRUCT,	 LEX_INT,   LEX_STRING, LEX_NOT,    LEX_OR,   LEX_AND,
 	LEX_LABEL,   LEX_TRUE,	LEX_FALSE,  LEX_BOOL,
 	//Разделители
 	LEX_LCRO,  LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON, LEX_COMMA,
 	LEX_EQ,    LEX_NEQ,  LEX_LEQ,  LEX_GEQ,  LEX_LSS,   LEX_GTR,       LEX_PLUS,
-	LEX_MINUS, LEX_DIV,  LEX_MOD,  LEX_MULT, LEX_DOT,   LEX_ASSIGN,
+	LEX_MINUS, LEX_DIV,  LEX_MULT, LEX_DOT,   LEX_ASSIGN,
 	//Остальное
 	LEX_IDENT, LEX_NUM, LEX_STR,
 	//ПОЛИЗ
@@ -65,9 +65,11 @@ public:
 	      int     find       (const string &) const;
 	      void    print      ()               const;
 	      bool    is_defined (int i)          const  {return table.at(i).defined;}
+	      bool    is_init    (int i)          const  {return table.at(i).initialized;}
 	      void    define     (int i)                 {if (table.at(i).defined) throw "Syntax error: redifinition"; else table.at(i).defined = true;}
 	      void    initialize (int i, int value)      {table.at(i).initialized = true; table.at(i).value = value;}
 	      int     get_value  (int i)                 {return table.at(i).value;}
+	      void    set_value  (int i, int value)      {table.at(i).value = value;}
 	      void    set_type   (int i, LexType lex)    {table.at(i).type = lex;}
 	      LexType get_type   (int i)          const  {return table.at(i).type;} // Все еще нужна?
 	//...
