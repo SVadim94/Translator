@@ -1,8 +1,9 @@
 #include "syn.h"
-#define get_lex()   lex = lex_list[++pos].lex_type;
-#define step_back() lex_list.get_lex(--pos) //Разберись с этим
-#define pop_op()    expression_type_stack.back(); expression_type_stack.pop_back();
-#define uint        unsigned int
+
+#define get_lexeme() lex = lex_list[++pos].lex_type;
+#define step_back()  lex_list.get_lex(--pos)
+#define pop_op()     expression_type_stack.back(); expression_type_stack.pop_back();
+
 
 //С этой лексемы может начинаться оператор?
 inline bool oper_begin(const LexType &lex)
@@ -16,34 +17,9 @@ inline bool oper_begin(const LexType &lex)
 		);
 }
 
-int TSTRUCT::find(int i, const string &str) const
-{
-	const STRUCT *str_no_i = &(table.at(i));
-	for (uint j = 0; j < str_no_i->fields.size(); ++j)
-		if (str.compare(str_no_i->fields[j].name) == 0)
-			return j;
-	return -1;
-}
-
-void TSTRUCT::print() const
-{
-	for (uint i = 0; i < table.size(); ++i)
-	{
-		cout << table[i].name << endl;
-		for (uint j = 0; j < table[i].fields.size(); ++j)
-			cout << '\t' << table[i].fields[j].name << " : " << print_lex(table[i].fields[j].type) << endl;
-	}
-}
-
-void POLIZ::print() const
-{
-	for (uint i = 0; i < poliz.size(); ++i)
-		cout << '#' << i << ": " << print_lex(poliz[i].lex_type) << " : " << poliz[i].value << endl;
-}
-
 void Analyzer::start()
 {
-	get_lex();
+	get_lexeme();
 
 	PROGRAM();
 }
@@ -52,12 +28,12 @@ void Analyzer::PROGRAM()
 {
 	if (lex == LEX_PROGRAM)
 	{
-		get_lex();
+		get_lexeme();
 
 		if (lex != LEX_LCRO)
 			throw "Syntax error: Expected {";
 
-		get_lex();
+		get_lexeme();
 
 		if (lex == LEX_STRUCT)
 			STRUCTURES();
@@ -74,13 +50,13 @@ void Analyzer::PROGRAM()
 
 void Analyzer::STRUCTURES()
 {
-	get_lex();
+	get_lexeme();
 
 	STRUCTURE();
 
 	while(lex == LEX_STRUCT)
 	{
-		get_lex();
+		get_lexeme();
 
 		STRUCTURE();
 	}
@@ -99,19 +75,19 @@ void Analyzer::STRUCTURE()
 	tid.define(ident_pos);
 	tid.initialize(ident_pos, struct_pos);
 
-	get_lex();
+	get_lexeme();
 
 	if (lex != LEX_LCRO)
 		throw "Syntax error: Expected {";
 
-	get_lex();
+	get_lexeme();
 
 	SDESCRIPTION();
 
 	if (lex != LEX_SEMICOLON)
 		throw "Syntax error: Expected ;";
 
-	get_lex();
+	get_lexeme();
 
 	while (lex == LEX_INT || lex == LEX_BOOL || lex == LEX_STRING)
 	{
@@ -120,25 +96,25 @@ void Analyzer::STRUCTURE()
 		if (lex != LEX_SEMICOLON)
 			throw "Syntax error: Expected ;";
 
-		get_lex();
+		get_lexeme();
 	}
 
 	if (lex != LEX_RCRO)
 		throw "Syntax error: Expected }";
 
-	get_lex();
+	get_lexeme();
 
 	if (lex != LEX_SEMICOLON)
 		throw "Syntax error: Expected ;";
 
-	get_lex();
+	get_lexeme();
 }
 
 void Analyzer::SDESCRIPTION()
 {
 	int ident_pos;
 
-	get_lex();
+	get_lexeme();
 
 	if (lex != LEX_IDENT)
 		throw "Syntax error: Expected identificator";
@@ -149,7 +125,7 @@ void Analyzer::SDESCRIPTION()
 
 	tstruct.push_field(tid.get_name(ident_pos), lex_list.get_lex(pos - 1));
 
-	get_lex();
+	get_lexeme();
 }
 
 void Analyzer::DESCRIPTIONS()
@@ -161,7 +137,7 @@ void Analyzer::DESCRIPTIONS()
 		if (lex != LEX_SEMICOLON)
 			throw "Syntax error: Expected ;";
 
-		get_lex();
+		get_lexeme();
 	}
 }
 
@@ -174,7 +150,7 @@ void Analyzer::DESCRIPTION()
 
 	while (lex == LEX_COMMA)
 	{
-		get_lex();
+		get_lexeme();
 
 		VARIABLE();
 	}
@@ -187,7 +163,7 @@ void Analyzer::TYPE()
 
 	if (lex == LEX_STRUCT)
 	{
-		get_lex();
+		get_lexeme();
 
 		if (lex != LEX_IDENT)
 			throw "Syntax error: Expected identificator";
@@ -195,7 +171,7 @@ void Analyzer::TYPE()
 		struct_block_type = lex_list.get_value(pos);
 	}
 
-	get_lex();
+	get_lexeme();
 }
 
 void Analyzer::VARIABLE()
@@ -213,14 +189,14 @@ void Analyzer::VARIABLE()
 	tid.define(ident_pos);
 	tid.set_type(ident_pos, block_type);
 
-	get_lex();
+	get_lexeme();
 
 	if (lex == LEX_ASSIGN && block_type == LEX_STRUCT)
 		throw "Syntax error: initialization of structures is not allowed";
 
 	if (lex == LEX_ASSIGN)
 	{
-		get_lex();
+		get_lexeme();
 
 		CONSTANT();
 	}
@@ -241,7 +217,7 @@ void Analyzer::CONSTANT()
 	{
 		if (lex == LEX_MINUS || lex == LEX_PLUS)
 		{
-			get_lex();
+			get_lexeme();
 
 			INTEGER();
 		}
@@ -265,7 +241,7 @@ void Analyzer::STRING()
 	tid.initialize(ident_pos, lex_list.get_value(pos));
 	tid.set_type(ident_pos, block_type);
 
-	get_lex();
+	get_lexeme();
 }
 
 void Analyzer::BOOL()
@@ -287,7 +263,7 @@ void Analyzer::BOOL()
 
 	tid.set_type(ident_pos, block_type);
 
-	get_lex();
+	get_lexeme();
 }
 
 void Analyzer::INTEGER()
@@ -305,7 +281,7 @@ void Analyzer::INTEGER()
 	tid.initialize(ident_pos, lex_list.get_value(pos));
 	tid.set_type(ident_pos, block_type);
 
-	get_lex();
+	get_lexeme();
 }
 
 void Analyzer::OPERATORS()
@@ -333,12 +309,12 @@ void Analyzer::OPERATOR()
 	switch(lex)
 	{
 		case LEX_IF:
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_LPAR)
 				throw "Syntax error: Expected (";
 
-			get_lex();
+			get_lexeme();
 
 			EXPRESSION();
 
@@ -359,7 +335,7 @@ void Analyzer::OPERATOR()
 
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 
 			OPERATOR();
 
@@ -375,13 +351,13 @@ void Analyzer::OPERATOR()
 
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 
 			OPERATOR();
 
-			tar_i_1                    = poliz.current();
-			poliz[lab_i_1].value       = tar_i_1; // Теперь ссылки указывают на ';'
-			poliz[lab_i_2].value       = tar_i_1; // Обе ссылки...
+			tar_i_1              = poliz.current();
+			poliz[lab_i_1].value = tar_i_1; // Теперь ссылки указывают на ';'
+			poliz[lab_i_2].value = tar_i_1; // Обе ссылки...
 
 			lexeme.lex_type = LEX_SEMICOLON;
 			lexeme.value    = -1;
@@ -391,12 +367,12 @@ void Analyzer::OPERATOR()
 		case LEX_WHILE:
 			break_stack.forbid();
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_LPAR)
 				throw "Syntax error: Expected (";
 
-			get_lex();
+			get_lexeme();
 
 			tar_i_2 = poliz.current();
 
@@ -421,7 +397,7 @@ void Analyzer::OPERATOR()
 
 			break_stack.allow();
 
-			get_lex();
+			get_lexeme();
 
 			OPERATOR();
 
@@ -447,12 +423,12 @@ void Analyzer::OPERATOR()
 		break;
 
 		case LEX_READ:
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_LPAR)
 				throw "Syntax error: Expected (";
 
-			get_lex();
+			get_lexeme();
 
 			ident_pos = lex_list.get_value(pos);
 
@@ -469,7 +445,7 @@ void Analyzer::OPERATOR()
 
 			poliz.push(lex_list[pos]);
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_RPAR)
 				throw "Syntax error: Expected )";
@@ -479,7 +455,7 @@ void Analyzer::OPERATOR()
 
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_SEMICOLON)
 				throw "Syntax error: Expected ;";
@@ -489,16 +465,16 @@ void Analyzer::OPERATOR()
 
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 		break;
 
 		case LEX_WRITE:
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_LPAR)
 				throw "Syntax error: Expected (";
 
-			get_lex();
+			get_lexeme();
 
 			EXPRESSION();
 
@@ -508,7 +484,7 @@ void Analyzer::OPERATOR()
 
 			while(lex == LEX_COMMA)
 			{
-				get_lex();
+				get_lexeme();
 
 				EXPRESSION();
 
@@ -520,7 +496,7 @@ void Analyzer::OPERATOR()
 			if (lex != LEX_RPAR)
 				throw "Syntax error: Expected )";
 
-			get_lex();
+			get_lexeme();
 
 			lexeme.lex_type = LEX_NUM;
 			lexeme.value    = write_argc;
@@ -537,19 +513,19 @@ void Analyzer::OPERATOR()
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 		break;
 
 		case LEX_SWITCH:
 /*Используется стек меток, наверное...
 Короче, время покажет...
 */
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_LPAR)
 				throw "Syntax error: Expected (";
 
-			get_lex();
+			get_lexeme();
 
 			EXPRESSION();
 
@@ -567,21 +543,21 @@ void Analyzer::OPERATOR()
 
 			break_stack.allow();
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_LCRO)
 				throw "Syntax error: Expected {";
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_CASE)
 				throw "Syntax error: Expected 'case'";
 
-			get_lex();
+			get_lexeme();
 
 			if (lex == LEX_MINUS)
 			{
-				get_lex();
+				get_lexeme();
 
 				if (lex != LEX_NUM)
 					throw "Syntax error: Expected numeric constant in switch";
@@ -593,7 +569,7 @@ void Analyzer::OPERATOR()
 			else
 			if (lex == LEX_PLUS)
 			{
-				get_lex();
+				get_lexeme();
 
 				if (lex != LEX_NUM)
 					throw "Syntax error: Expected numeric constant in switch";
@@ -612,12 +588,12 @@ void Analyzer::OPERATOR()
 			else
 				throw "Syntax error: Expected numeric constant";
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_COLON)
 				throw "Syntax error: Expected :";
 
-			get_lex();
+			get_lexeme();
 
 			lexeme.lex_type = POLIZ_LABEL;
 			lexeme.value    = -1;
@@ -634,7 +610,7 @@ void Analyzer::OPERATOR()
 
 			while (lex == LEX_CASE)
 			{
-				get_lex();
+				get_lexeme();
 
 				lexeme.lex_type = POLIZ_LABEL;
 				lexeme.value    = poliz.current() + 5;
@@ -646,7 +622,7 @@ void Analyzer::OPERATOR()
 
 				if (lex == LEX_MINUS)
 				{
-					get_lex();
+					get_lexeme();
 
 					if (lex != LEX_NUM)
 						throw "Syntax error: Expected numeric constant in switch";
@@ -658,7 +634,7 @@ void Analyzer::OPERATOR()
 				else
 				if (lex == LEX_PLUS)
 				{
-					get_lex();
+					get_lexeme();
 
 					if (lex != LEX_NUM)
 						throw "Syntax error: Expected numeric constant in switch";
@@ -677,12 +653,12 @@ void Analyzer::OPERATOR()
 				else
 					throw "Syntax error: Expected numeric constant";
 
-				get_lex();
+				get_lexeme();
 
 				if (lex != LEX_COLON)
 					throw "Syntax error: Expected :";
 
-				get_lex();
+				get_lexeme();
 
 				poliz[lab_i_1].value = poliz.current() + 1;
 
@@ -704,12 +680,12 @@ void Analyzer::OPERATOR()
 
 			if (lex == LEX_DEFAULT)
 			{
-				get_lex();
+				get_lexeme();
 
 				if (lex != LEX_COLON)
 					throw "Syntax error: Expected :";
 
-				get_lex();
+				get_lexeme();
 
 				while(oper_begin(lex))
 				{
@@ -729,18 +705,18 @@ void Analyzer::OPERATOR()
 		break;
 
 		case LEX_LCRO:
-			get_lex();
+			get_lexeme();
 
 			OPERATORS();
 
 			if (lex != LEX_RCRO)
 				throw "Syntax error: Expected }";
 
-			get_lex();
+			get_lexeme();
 		break;
 
 		case LEX_IDENT:
-			get_lex();
+			get_lexeme();
 
 			if (lex == LEX_COLON)
 			{
@@ -757,7 +733,7 @@ void Analyzer::OPERATOR()
 				else
 					poliz[tid.get_value(ident_pos)].value = poliz.current();
 
-				get_lex();
+				get_lexeme();
 
 				OPERATOR();
 			}
@@ -779,19 +755,19 @@ void Analyzer::OPERATOR()
 				lexeme.value    = -1;
 				poliz.push(lexeme);
 
-				get_lex();
+				get_lexeme();
 			}
 		break;
 
 		case LEX_FOR:
 			break_stack.forbid();
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_LPAR)
 				throw "Syntax error: Expected (";
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_SEMICOLON)
 			{
@@ -809,7 +785,7 @@ void Analyzer::OPERATOR()
 
 			tar_i_3 = poliz.current();
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_SEMICOLON)
 			{
@@ -844,7 +820,7 @@ void Analyzer::OPERATOR()
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 
 			tar_i_4 = poliz.current();
 
@@ -868,7 +844,7 @@ void Analyzer::OPERATOR()
 
 			break_stack.allow();
 
-			get_lex();
+			get_lexeme();
 
 			tar_i_2 = poliz.current();
 
@@ -897,7 +873,7 @@ void Analyzer::OPERATOR()
 
 		case LEX_BREAK:
 			//Something poliz
-			get_lex();
+			get_lexeme();
 
 			if (!break_stack.is_allowed())
 				throw "Semantic error: 'break' must be in loop / switch";
@@ -915,11 +891,11 @@ void Analyzer::OPERATOR()
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 		break;
 
 		case LEX_GOTO:
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_IDENT)
 				throw "Syntax error: Expected identificator";
@@ -948,7 +924,7 @@ void Analyzer::OPERATOR()
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 
 			if (lex != LEX_SEMICOLON)
 				throw "Syntax error: Expected ;";
@@ -957,7 +933,7 @@ void Analyzer::OPERATOR()
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 		break;
 
 		default:
@@ -972,7 +948,7 @@ void Analyzer::OPERATOR()
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
-			get_lex();
+			get_lexeme();
 		break;
 	}
 }
@@ -995,7 +971,7 @@ void Analyzer::EXPRESSION()
 
 		poliz.push(lexeme);
 
-		get_lex();
+		get_lexeme();
 
 		++assign_count;
 
@@ -1027,7 +1003,7 @@ void Analyzer::E1()
 
 	while(lex == LEX_OR)
 	{
-		get_lex();
+		get_lexeme();
 
 		E2();
 
@@ -1054,7 +1030,7 @@ void Analyzer::E2()
 
 	while(lex == LEX_AND)
 	{
-		get_lex();
+		get_lexeme();
 
 		E3();
 
@@ -1086,7 +1062,7 @@ void Analyzer::E3()
 			lexeme.lex_type = lex;
 			lexeme.value    = -1;
 
-			get_lex();
+			get_lexeme();
 
 			E4();
 
@@ -1116,7 +1092,7 @@ void Analyzer::E4()
 	{
 		op_type = lex;
 
-		get_lex();
+		get_lexeme();
 
 		E5();
 
@@ -1145,7 +1121,7 @@ void Analyzer::E5()
 	{
 		op_type = lex;
 
-		get_lex();
+		get_lexeme();
 
 		E6();
 
@@ -1168,7 +1144,7 @@ void Analyzer::E6()
 
 	if (lex == LEX_NOT)
 	{
-		get_lex();
+		get_lexeme();
 
 		E7();
 
@@ -1193,7 +1169,7 @@ void Analyzer::E7()
 
 	if (lex == LEX_MINUS)
 	{
-		get_lex();
+		get_lexeme();
 
 		E8();
 
@@ -1225,7 +1201,7 @@ void Analyzer::E8()
 
 	if (lex == LEX_LPAR)
 	{
-		get_lex();
+		get_lexeme();
 
 		EXPRESSION();
 
@@ -1242,11 +1218,11 @@ void Analyzer::E8()
 			if (!tid.is_defined(lex_list.get_value(pos)))
 				throw "Syntax error: Undefined identificator";
 
-			get_lex();
+			get_lexeme();
 
 			if (lex == LEX_DOT)
 			{
-				get_lex();
+				get_lexeme();
 
 				if (lex != LEX_IDENT)
 					throw "Syntax error: wrong '.' usage";
@@ -1276,7 +1252,7 @@ void Analyzer::E8()
 
 				expression_type_stack.push_back(type);
 
-				get_lex();
+				get_lexeme();
 			}
 			else
 			{
@@ -1287,7 +1263,7 @@ void Analyzer::E8()
 
 		case LEX_RPAR:
 			//Wow, such handy...
-			get_lex();
+			get_lexeme();
 		break;
 
 		default:
@@ -1295,7 +1271,7 @@ void Analyzer::E8()
 
 			expression_type_stack.push_back(lex);
 
-			get_lex();
+			get_lexeme();
 		break;
 	}
 }

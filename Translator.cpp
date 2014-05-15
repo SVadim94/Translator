@@ -1,3 +1,7 @@
+#ifndef __tables__
+#include "tables.h"
+#endif
+
 #include "lex.h"
 #include "syn.h"
 

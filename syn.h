@@ -1,61 +1,9 @@
-//Оно мне надо?!
-#ifndef SEP_TABLE_SIZE
-#include "lex.h"
+#include <vector>
+#include <string>
+
+#ifndef __tables__
+#include "tables.h"
 #endif
-#define uint unsigned int
-
-class POLIZ
-{
-	vector<Lex> poliz;
-	vector<uint> labels;
-public:
-	uint  push       (Lex lex)               {poliz.push_back(lex); return poliz.size() - 1;}
-	uint  label_pop  ()                      {uint tmp = labels.back(); labels.pop_back(); return tmp;}
-	uint  current    ()                      {return poliz.size();} // Сюда пока писать нельзя!
-	void          label_push (uint lb_index) {labels.push_back(lb_index);}
-	void          print      () const;
-	Lex          &operator[] (int i)                 {return poliz.at(i);}
-	Lex           pop        ()                      {Lex tmp = poliz.back(); poliz.pop_back(); return tmp;}
-};
-
-class TSTRUCT
-{
-	struct FIELD
-	{
-		string name;
-		LexType type;
-		FIELD() {}
-		FIELD(const string &str, LexType lex) : name(str), type(lex) {}
-	};
-
-	struct STRUCT
-	{
-		string name;
-		vector<FIELD> fields;
-		STRUCT() {}
-		explicit STRUCT(const string &str) : name(str) {}
-	};
-
-	vector<STRUCT> table;
-public:
-	void   push_field  (const string &str, LexType lex) {FIELD tmp(str, lex); table.back().fields.push_back(tmp);}
-	int    push        (const string &str)              {STRUCT tmp(str); table.push_back(tmp); return table.size() - 1;}
-	STRUCT &operator[] (int i)                          {return table.at(i);}
-
-	int  find  (int, const string &) const;
-	void print ()                    const;
-	//...
-};
-
-/*class SWITCH_STACK
-{
-	vector<int> stack;
-public:
-	void push (int i) {stack.push_back(i);}
-	void pop  ()      {stack.pop_back();}
-	int  last ()      {return stack.back();}
-};
-*/
 
 class BREAK_STACK
 {
@@ -78,6 +26,7 @@ public:
 			break_allowed = false;
 		return tmp;
 	}
+
 	bool is_allowed() {return break_allowed;}
 };
 

@@ -1,26 +1,30 @@
 #include "lex.h"
 
-const LexType Parser::tw[]={
+#define SEP_TABLE_SIZE   sizeof(Parser::td) / sizeof(int)
+#define WORDS_TABLE_SIZE sizeof(Parser::tw) / sizeof(int)
+
+
+const LexType Parser::tw[] = {
 	LEX_PROGRAM, LEX_IF,    LEX_ELSE,   LEX_SWITCH, LEX_CASE, LEX_DEFAULT,
 	LEX_FOR,     LEX_WHILE, LEX_BREAK,  LEX_GOTO,   LEX_READ, LEX_WRITE,
 	LEX_STRUCT,	 LEX_INT,   LEX_STRING, LEX_NOT,    LEX_OR,   LEX_AND,
 	LEX_LABEL,   LEX_TRUE,	LEX_FALSE,  LEX_BOOL
 };
 
-const LexType Parser::td[]={
+const LexType Parser::td[] = {
 	LEX_LCRO,  LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON, LEX_COMMA,
 	LEX_EQ,    LEX_NEQ,  LEX_LEQ,  LEX_GEQ,  LEX_LSS,   LEX_GTR,       LEX_PLUS,
-	LEX_MINUS, LEX_DIV,  LEX_MULT, LEX_DOT,   LEX_ASSIGN
+	LEX_MINUS, LEX_DIV,  LEX_MULT, LEX_DOT,  LEX_ASSIGN
 };
 
-const char * Parser::TW[]={
+const char * Parser::TW[] = {
 	"program", "if", "else", "switch", "case", "default",
 	"for", "while", "break", "goto", "read", "write",
 	"struct", "int", "string", "not", "or", "and", "label",
 	"true",	"false", "bool"
 };
 
-const char * Parser::TD[]={
+const char * Parser::TD[] = {
 	"{", "}", "(", ")", ":", ";",
 	",", "==", "!=", "<=", ">=", "<", ">",
 	"+", "-", "/", "*", ".", "="
@@ -28,79 +32,25 @@ const char * Parser::TD[]={
 
 inline bool is_alpha(char c)
 {
-	return ((c>='a' && c<='z') || (c>='A' && c<='Z'));
+	return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
 }
 
 inline bool is_num(char c)
 {
-	return (c>='0' && c<='9');
+	return (c >= '0' && c <= '9');
 }
 
 bool is_separator(char c)
 {
-	for (unsigned int i=0; i<SEP_TABLE_SIZE; ++i)
-		if (c==Parser::TD[i][0])
+	for (unsigned int i = 0; i < SEP_TABLE_SIZE; ++i)
+		if (c == Parser::TD[i][0])
 			return true;
 	return false;
 }
 
 inline bool is_space(char c)
 {
-	return (c==' ' || c=='\n' || c=='\t' || c==EOF);
-}
-
-string print_lex(LexType lex)
-{
-	if (lex < LEX_NULL || lex >= LEX_LAST)
-		throw "Bad print_lex parameter! Lexeme out of range!";
-
-	if (lex == LEX_NULL)
-		return "NULL";
-
-	if (lex >= LEX_PROGRAM && lex <= LEX_BOOL)
-		return Parser :: TW[lex - LEX_PROGRAM];
-
-	if (lex >= LEX_LCRO && lex <= LEX_ASSIGN)
-		return Parser :: TD[lex - LEX_LCRO];
-
-	switch (lex)
-	{
-	case LEX_IDENT:
-		return "Identificator";
-	break;
-
-	case LEX_NUM:
-		return "Numeric constant";
-	break;
-
-	case LEX_STR:
-		return "String constant";
-	break;
-
-	case POLIZ_ADDRESS:
-		return "POLIZ ADDRESS";
-	break;
-
-	case POLIZ_FGO:
-		return "POLIZ FGO";
-	break;
-
-	case POLIZ_GO:
-		return "POLIZ GO";
-	break;
-
-	case POLIZ_LABEL:
-		return "POLIZ LABEL";
-	break;
-
-	case POLIZ_TGO:
-		return "POLIZ TGO";
-	break;
-
-	default:
-		return "I think we need to change head-programmer...";
-	break;
-	}
+	return (c == ' ' || c == '\n' || c == '\t' || c == EOF);
 }
 
 void readString(string &str)
@@ -130,50 +80,6 @@ void readComment()
 	}
 	if (cur == EOF)
 		throw "Unexpected EOF!";
-}
-
-void TID::print() const
-{
-	for (unsigned int i=0; i < table.size(); ++i)
-		cout << '#' << i << ": " << table.at(i).name << endl <<
-		'\t' << "Defined: " << table.at(i).defined << endl <<
-		'\t' << "Initialized: " << table.at(i).initialized << endl <<
-		'\t' << "Type: " << print_lex(table.at(i).type) << endl <<
-		'\t' << "Value: " << table.at(i).value << endl;
-}
-
-int TID::find(const string &str) const
-{
-	for (unsigned int i = 0; i < table.size(); ++i)
-	{
-		if (str.compare(table.at(i).name) == 0)
-			return i;
-	}
-	return -1;
-}
-
-int TSTR::find(const string &str) const
-{
-	for (unsigned int i = 0; i < table.size(); ++i)
-	{
-		if (str.compare(table[i]) == 0)
-			return i;
-	}
-	return -1;
-}
-
-void TSTR::print() const
-{
-	for (unsigned int i=0; i < table.size(); ++i)
-		cout << '#' << i << ": " << table[i] << endl;
-}
-
-void LexList::print() const
-{
-	for (unsigned int i=0; i<list.size(); ++i)
-	{
-		cout << print_lex(list[i].lex_type) << " -> " << list[i].value << endl;
-	}
 }
 
 void Parser::print(TID &tid, TSTR &tstr, LexList &lex_list) const
@@ -286,7 +192,7 @@ void Parser::start()
 
 						def.to = 0;
 
-						while((c=getchar())==' ' || c == '\t');
+						while((c = getchar()) == ' ' || c == '\t');
 
 						if (!is_num(c))
 							throw "Second argument of #define must be numeric constant!";
@@ -296,7 +202,7 @@ void Parser::start()
 							if (is_num(c))
 								def.to = 10 * def.to + c - '0'; // Переполнение?!
 							else
-							if (c==' ' || c=='\t')
+							if (c == ' ' || c == '\t')
 							{
 								while((c = getchar()) != '\n')
 									if (c != ' ' || c != '\t')
@@ -686,19 +592,23 @@ void Parser::start()
 						throw "Wrong directive [3]!";
 				}
 				else
-				if (is_alpha(c)) //Побочный эффект
+				if (is_alpha(c))
 				{
 					mode = IDENT;
+
 					ident.clear();
 					ident.push_back(c);
+
 					define_allowed = false;
 				}
 				else
 				if (is_num(c))
 				{
 					mode = NUM;
+
 					lex.lex_type = LEX_NUM;
 					lex.value = c - '0';
+
 					define_allowed = false;
 				}
 				else
@@ -706,6 +616,7 @@ void Parser::start()
 				{
 					ident.clear();
 					ident.push_back(c);
+
 					if (c == '=' || c == '!' || c == '<' || c == '>' || c == '/')
 					{
 						mode = SEPARATOR;
@@ -757,12 +668,12 @@ void Parser::start()
 				{
 					mode = START;
 
-					tmp = findPP(ident);
+					tmp  = findPP(ident);
 
 					if (tmp != -1)
 					{
 						lex.lex_type = LEX_NUM;
-						lex.value = pre_proc_list[tmp].to;
+						lex.value    = pre_proc_list[tmp].to;
 						lex_list.push(lex);
 					}
 					else
@@ -772,7 +683,8 @@ void Parser::start()
 						if (tmp == -1)
 						{
 							lex.lex_type = LEX_IDENT;
-							tmp = tid.find(ident);
+							tmp          = tid.find(ident);
+
 							if (tmp == -1)
 								lex.value = tid.push(ident);
 							else
@@ -781,7 +693,7 @@ void Parser::start()
 						else
 						{
 							lex.lex_type = tw[tmp];
-							lex.value = -1;
+							lex.value    = -1;
 						}
 
 						lex_list.push(lex);
@@ -827,7 +739,7 @@ void Parser::start()
 						if (tmp == -1)
 							throw "Incorrect sepator's combination!";
 						lex.lex_type = td[tmp];
-						lex.value = -1;
+						lex.value    = -1;
 						lex_list.push(lex);
 					}
 					else
