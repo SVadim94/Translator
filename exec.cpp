@@ -4,23 +4,23 @@
 
 void Executer :: start()
 {
-    uint tmp_str_allocated = 0;
-    uint pos               = 0;
-    int  tmp;
-    int  lValue, rValue;
+	uint tmp_str_allocated = 0;
+	uint pos               = 0;
+	int  tmp;
+	int  lValue, rValue;
 
 	string field_name;
 
-    Lex  cur_lexeme;
-    Lex  lexeme;
-    Lex  op1, op2;
+	Lex  cur_lexeme;
+	Lex  lexeme;
+	Lex  op1, op2;
 
-    while (pos < poliz.size())
+	while (pos < poliz.size())
 	{
 		get_lexeme();
 
-        switch (cur_lexeme.lex_type)
-        {
+		switch (cur_lexeme.lex_type)
+		{
 		case LEX_NUM:
 		case LEX_STR:
 		case POLIZ_ADDRESS:
@@ -82,19 +82,19 @@ void Executer :: start()
 			push(lexeme);
 		break;
 
-        case LEX_FALSE:
+		case LEX_FALSE:
 			lexeme.lex_type = LEX_BOOL;
 			lexeme.value    = 0;
 			push(lexeme);
 		break;
 
 		case LEX_STRING:
-            if (!tid.is_init(cur_lexeme.value))
+			if (!tid.is_init(cur_lexeme.value))
 				tid.initialize(cur_lexeme.value, tstr.push(""));
 
-            lexeme.lex_type = LEX_STR;
-            lexeme.value    = tid.get_value(cur_lexeme.value);
-            push(lexeme);
+			lexeme.lex_type = LEX_STR;
+			lexeme.value    = tid.get_value(cur_lexeme.value);
+			push(lexeme);
 		break;
 
 		case LEX_PLUS:
@@ -118,8 +118,8 @@ void Executer :: start()
 		break;
 
 		case LEX_MINUS:
-            op2 = pop();
-            op1 = pop();
+			op2 = pop();
+			op1 = pop();
 
 			lexeme.lex_type = LEX_NUM;
 			lexeme.value    = op1.value - op2.value;
@@ -133,8 +133,8 @@ void Executer :: start()
 		break;
 
 		case LEX_MULT:
-            op2 = pop();
-            op1 = pop();
+			op2 = pop();
+			op1 = pop();
 
 			lexeme.lex_type = LEX_NUM;
 			lexeme.value    = op1.value / op2.value;
@@ -143,7 +143,7 @@ void Executer :: start()
 
 		case LEX_DIV:
 			op2 = pop();
-            op1 = pop();
+			op1 = pop();
 
 			lexeme.lex_type = LEX_NUM;
 			lexeme.value    = op1.value * op2.value;
@@ -178,7 +178,7 @@ void Executer :: start()
 			op1 = pop();
 
 			if (tid.get_type(op1.value) == LEX_STRING)
-			    cin >> tstr[tid.get_value(op1.value)];
+				cin >> tstr[tid.get_value(op1.value)];
 			else
 			{
 				cin >> tmp;
@@ -191,7 +191,7 @@ void Executer :: start()
 
 			for (vector<Lex> :: iterator elem_to_write = stack.end() - op1.value;
 				elem_to_write < stack.end(); ++elem_to_write)
-                {
+				{
 					switch(elem_to_write->lex_type)
 					{
 					case LEX_NUM:
@@ -210,7 +210,7 @@ void Executer :: start()
 						cout << "WATCH WRITE" << endl;
 					break;
 					}
-                }
+				}
 		break;
 
 		case LEX_EQ:
@@ -270,14 +270,14 @@ void Executer :: start()
 		case LEX_SWITCH:
 			op1 = pop();
 
-            switch_stack.push(op1.value);
+			switch_stack.push(op1.value);
 		break;
 
 		case LEX_CASE:
-            op2 = pop();
+			op2 = pop();
 			op1 = pop();
 
-            if (op1.value != switch_stack.last())
+			if (op1.value != switch_stack.last())
 				pos = op2.value;
 		break;
 
@@ -290,9 +290,9 @@ void Executer :: start()
 		break;
 
 		case POLIZ_GO:
-            op1 = pop();
+			op1 = pop();
 
-            pos = op1.value;
+			pos = op1.value;
 		break;
 
 		case POLIZ_FGO:
@@ -307,8 +307,8 @@ void Executer :: start()
 			op2 = pop();
 			op1 = pop();
 
-            switch(op2.lex_type)
-            {
+			switch(op2.lex_type)
+			{
 			case LEX_NUM:
 			case LEX_BOOL:
 				tid.set_value(op1.value, op2.value);
@@ -318,11 +318,11 @@ void Executer :: start()
 				if (!tid.is_init(op1.value))
 					tid.initialize(op1.value, tstr.push(""));
 
-                tstr[tid.get_value(op1.value)].assign(tstr[op2.value]);
+				tstr[tid.get_value(op1.value)].assign(tstr[op2.value]);
 			break;
 
 			case LEX_STRUCT:
-                for (vector<FIELD> :: iterator iter = tstruct[tid.get_value(op2.value)].fields.begin();
+				for (vector<FIELD> :: iterator iter = tstruct[tid.get_value(op2.value)].fields.begin();
 					iter < tstruct[tid.get_value(op2.value)].fields.end(); ++iter)
 					{
 						field_name = tid.get_name(op1.value) + "." + iter->name;
@@ -342,7 +342,7 @@ void Executer :: start()
 
 						if ((rValue = tid.find(field_name)) != -1)
 						{
-                            if (tid.get_type(rValue) == LEX_BOOL || tid.get_type(rValue) == LEX_INT)
+							if (tid.get_type(rValue) == LEX_BOOL || tid.get_type(rValue) == LEX_INT)
 								tid.set_value(lValue, tid.get_value(rValue));
 							else
 								tstr[tid.get_value(lValue)].assign(tstr[tid.get_value(rValue)]);
@@ -353,7 +353,7 @@ void Executer :: start()
 			default:
 				cout << "WATCH ASSIGN";
 			break;
-            }
+			}
 		break;
 
 		case LEX_SEMICOLON:
@@ -368,7 +368,7 @@ void Executer :: start()
 
 		case LEX_LABEL:
 			if (cur_lexeme.value == -1)
-                throw "Runtime error: No such label!";
+				throw "Runtime error: No such label!";
 
 			lexeme.lex_type = POLIZ_LABEL;
 			lexeme.value    = cur_lexeme.value;
@@ -378,13 +378,13 @@ void Executer :: start()
 		default:
 			cout << "UNEXPECTED LEXEME" << endl;
 		break;
-        }
+		}
 	}
 }
 
 void Executer :: push(Lex lexeme)
 {
-    stack.push_back(lexeme);
+	stack.push_back(lexeme);
 }
 
 Lex Executer :: pop()
@@ -396,5 +396,5 @@ Lex Executer :: pop()
 
 void Executer :: clear()
 {
-    stack.clear();
+	stack.clear();
 }

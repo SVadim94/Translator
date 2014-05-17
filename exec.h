@@ -25,8 +25,8 @@ class Executer
 	vector<Lex>  stack;
 
 public:
-    Executer(TID &tid, TSTR &tstr, TSTRUCT &tstruct, POLIZ &poliz) :
-    	tid(tid), tstr(tstr), tstruct(tstruct), poliz(poliz) {}
+	Executer(TID &tid, TSTR &tstr, TSTRUCT &tstruct, POLIZ &poliz) :
+		tid(tid), tstr(tstr), tstruct(tstruct), poliz(poliz) {}
 
 	void start ();
 	void push  (Lex);

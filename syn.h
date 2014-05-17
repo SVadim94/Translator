@@ -10,7 +10,7 @@ class BREAK_STACK
 	vector<uint> stack;
 	bool break_allowed;
 public:
-    BREAK_STACK () : break_allowed(false) {}
+	BREAK_STACK () : break_allowed(false) {}
 	// Кладет -1 ~ 0xFFFF... как разделитель кадра стека текущего цикла/switch'a
 	void allow  ()        {break_allowed = true; stack.push_back(-1);}
 	// Позиция незаполненного break'a в ПОЛИЗЕ

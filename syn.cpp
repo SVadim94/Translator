@@ -898,7 +898,7 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = LEX_SEMICOLON;
 			lexeme.value    = -1;
-			tar_i_1	        = poliz.push(lexeme);
+			tar_i_1         = poliz.push(lexeme);
 
 			poliz[lab_i_1].value = tar_i_1;
 			poliz[lab_i_2].value = tar_i_2;
@@ -1397,6 +1397,6 @@ inline void check_minus(LexType op)
 
 inline bool is_cmp(LexType lex)
 {
-	return 	lex == LEX_EQ 	|| lex == LEX_NEQ || lex == LEX_GTR ||
-			lex == LEX_LSS	|| lex == LEX_GEQ || lex == LEX_LEQ;
+	return  lex == LEX_EQ   || lex == LEX_NEQ || lex == LEX_GTR ||
+			lex == LEX_LSS  || lex == LEX_GEQ || lex == LEX_LEQ;
 }
