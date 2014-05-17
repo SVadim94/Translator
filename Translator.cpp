@@ -1,32 +1,46 @@
+#include <fstream>
+#include <iostream>
+
 #ifndef __tables__
 #include "tables.h"
 #endif
 
 #include "lex.h"
 #include "syn.h"
+#include "exec.h"
 
-int main()
+using namespace std;
+
+int main(int argc, char *argv[])
 {
 	try
 	{
-		TID tid;
-		TSTR tstr;
+		if (argc < 3)
+			throw "Error! No filename!";
+
+		ifstream fin(argv[1]);
+		ofstream fout(argv[2]);
+
+		TID     tid;
+		TSTR    tstr;
 		LexList lex_list;
 		TSTRUCT tstruct;
-		POLIZ poliz;
+		POLIZ   poliz;
 
-		Parser pars(tid, tstr, lex_list);
+		Parser   parser(fin, tid, tstr, lex_list);
 		Analyzer syn_analyzer(tid, tstr, lex_list, tstruct, poliz);
+		Executer exec(tid, tstr, tstruct, poliz);
 
-		pars.start();
+		parser.start();
 
 		syn_analyzer.start();
 
-		pars.print(tid, tstr, lex_list);
-		tstruct.print();
-		poliz.print();
+		exec.start();
+
+		parser.print(fout, tid, tstr, lex_list);
+		tstruct.print(fout);
+		poliz.print(fout);
 	}
 	catch(const char * str) {cout << str << endl;}
-//	catch(...) {cout << "Unexpected error!";}
-	catch(...) {cout << "I dunno, lol ¯\\(°_o)/¯";}
+	catch(...) {cout << "Unexpected error!";}
 }

@@ -64,14 +64,14 @@ class Analyzer
 	void OPERATORS();
 	void OPERATOR();
 	void EXPRESSION();
-	void E1();
-	void E2();
-	void E3();
-	void E4();
-	void E5();
-	void E6();
-	void E7();
-	void E8();
+	void EXP_OR();
+	void EXP_AND();
+	void EXP_CMP();
+	void EXP_PLUS_MINUS();
+	void EXP_MULT_DIV();
+	void EXP_NOT();
+	void EXP_UN_MINUS();
+	void EXP_PAR();
 	//...
 public:
 	Analyzer(TID &tid, TSTR &tstr, LexList &lex_list, TSTRUCT &tstruct, POLIZ &poliz) :

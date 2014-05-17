@@ -1,5 +1,5 @@
 #include <iostream>
-#include <cstdio>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -23,11 +23,11 @@ enum LexType
 	//Разделители
 	LEX_LCRO,  LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON, LEX_COMMA,
 	LEX_EQ,    LEX_NEQ,  LEX_LEQ,  LEX_GEQ,  LEX_LSS,   LEX_GTR,       LEX_PLUS,
-	LEX_MINUS, LEX_DIV,  LEX_MULT, LEX_DOT,   LEX_ASSIGN,
+	LEX_MINUS, LEX_UMIN, LEX_DIV,  LEX_MULT, LEX_DOT,   LEX_ASSIGN,
 	//Остальное
 	LEX_IDENT, LEX_NUM, LEX_STR,
 	//ПОЛИЗ
-	POLIZ_GO, POLIZ_FGO, POLIZ_TGO, POLIZ_LABEL, POLIZ_ADDRESS,
+	POLIZ_GO, POLIZ_FGO, POLIZ_LABEL, POLIZ_ADDRESS,
 	//Служебный элемент перечисления для подсчета кол-ва
 	LEX_LAST
 };
@@ -67,7 +67,7 @@ public:
 	string &get_name   (int i)                 {return table.at(i).name;}
 	int     push       (string &str)           {ID tmp; tmp.name.assign(str); table.push_back(tmp); return table.size() - 1;}
 	int     find       (const string &) const;
-	void    print      ()               const;
+	void    print      (ofstream &)     const;
 	bool    is_defined (int i)          const  {return table.at(i).defined;}
 	bool    is_init    (int i)          const  {return table.at(i).initialized;}
 	void    define     (int i)                 {if (table.at(i).defined) throw "Syntax error: redifinition"; else table.at(i).defined = true;}
@@ -87,9 +87,11 @@ public:
 	TSTR() {}
 	~TSTR() {}
 
-	int  push  (const string &str) {table.push_back(str); return table.size() - 1;}
-	int  find  (const string &)    const;
-	void print ()                  const;
+	int    push        (const string &str) {table.push_back(str); return table.size() - 1;}
+	int    find        (const string &)    const;
+	void   pop         ()                  {table.pop_back();}
+	void   print       (ofstream &)        const;
+	string &operator[] (int i)             {return table.at(i);}
 };
 
 //Последовательность лексем
@@ -104,7 +106,7 @@ public:
 	void    push       (const Lex &lex) {list.push_back(lex);}
 	int     get_value  (int i)          {return list[i].value;}
 	LexType get_lex    (int i)          {return list.at(i).lex_type;}
-	void    print      ()               const;
+	void    print      (ofstream &)     const;
 	//...
 };
 
@@ -118,31 +120,31 @@ public:
 	uint  current     ()               {return table.size();} // Сюда пока писать нельзя!
 	uint  size        ()               {return table.size();}
 	void  label_push  (uint lb_index)  {labels.push_back(lb_index);}
-	void  print       () const;
+	void  print       (ofstream &)     const;
 	Lex   &operator[] (int i)          {return table.at(i);}
 	Lex   pop         ()               {Lex tmp = table.back(); table.pop_back(); return tmp;}
 };
 
+struct FIELD
+{
+	string  name;
+	LexType type;
+
+	FIELD() {}
+	FIELD(const string &str, LexType lex) : name(str), type(lex) {}
+};
+
+struct STRUCT
+{
+	string name;
+	vector<FIELD> fields;
+
+	explicit STRUCT(const string &str) : name(str) {}
+			 STRUCT() {}
+};
+
 class TSTRUCT
 {
-	struct FIELD
-	{
-		string  name;
-		LexType type;
-
-		FIELD() {}
-		FIELD(const string &str, LexType lex) : name(str), type(lex) {}
-	};
-
-	struct STRUCT
-	{
-		string name;
-		vector<FIELD> fields;
-
-		explicit STRUCT(const string &str) : name(str) {}
-		         STRUCT() {}
-	};
-
 	vector<STRUCT> table;
 public:
 	void   push_field  (const string &str, LexType lex) {FIELD tmp(str, lex); table.back().fields.push_back(tmp);}
@@ -150,7 +152,7 @@ public:
 	STRUCT &operator[] (int i)                          {return table.at(i);}
 
 	int  find  (int, const string &) const;
-	void print ()                    const;
+	void print (ofstream &)          const;
 	//...
 };
 

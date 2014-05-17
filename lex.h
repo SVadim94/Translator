@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -93,9 +94,10 @@ class Parser
 	static const LexType tw[];
 	static const LexType td[];
 
-	TID     &tid;
-	TSTR    &tstr;
-	LexList &lex_list;
+	ifstream &fin;
+	TID      &tid;
+	TSTR     &tstr;
+	LexList  &lex_list;
 
 	enum MODE{
 		START,
@@ -113,8 +115,8 @@ class Parser
 	vector<Define> pre_proc_list;
 
 public:
-	Parser(TID &tid, TSTR &tstr, LexList &lex_list) :
-		tid(tid), tstr(tstr), lex_list(lex_list), mode(START) {}
+	Parser(ifstream &fin, TID &tid, TSTR &tstr, LexList &lex_list) :
+		fin(fin), tid(tid), tstr(tstr), lex_list(lex_list), mode(START) {}
 	~Parser() {}
 
 	void start();
@@ -124,7 +126,7 @@ public:
 	int findPP(const string &) const;
 
 	void check_ident(TID &tid, int i) {if (tid.is_defined(i)) throw "Semanthic error: Redefinition"; else tid.define(i);}
-	void print(TID &, TSTR &, LexList &) const;
+	void print(ofstream &, TID &, TSTR &, LexList &) const;
 
 	friend bool is_separator(char);
 	friend string print_lex(LexType);
@@ -134,5 +136,5 @@ inline bool is_alpha(char c);
 inline bool is_space(char c);
 
 bool is_separator(char c);
-void readString(string &str);
-void readComment();
+void readString(ifstream &fin, string &str);
+void readComment(ifstream &fin);

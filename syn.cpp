@@ -13,7 +13,7 @@ inline bool oper_begin(const LexType &lex)
 		lex == LEX_WHILE  || lex == LEX_FOR   || lex == LEX_READ  ||
 		lex == LEX_WRITE  || lex == LEX_NUM   || lex == LEX_IDENT ||
 		lex == LEX_SWITCH || lex == LEX_BREAK || lex == LEX_GOTO  ||
-		lex == LEX_LCRO   || lex == LEX_LPAR
+		lex == LEX_LCRO   || lex == LEX_LPAR  || lex == LEX_UMIN
 		);
 }
 
@@ -105,7 +105,7 @@ void Analyzer::STRUCTURE()
 	get_lexeme();
 
 	if (lex != LEX_SEMICOLON)
-		throw "Syntax error: Expected ;";
+		throw "Syntax error: Expected ';' after struct description";
 
 	get_lexeme();
 }
@@ -168,7 +168,7 @@ void Analyzer::TYPE()
 		if (lex != LEX_IDENT)
 			throw "Syntax error: Expected identificator";
 
-		struct_block_type = lex_list.get_value(pos);
+		struct_block_type = tid.get_value(lex_list.get_value(pos));
 	}
 
 	get_lexeme();
@@ -294,7 +294,7 @@ void Analyzer::OPERATORS()
 
 void Analyzer::OPERATOR()
 {
-	LexType op;
+	LexType op, type;
 
 	//label_index_i
 	uint lab_i_1 = 0, lab_i_2 = 0;
@@ -305,6 +305,11 @@ void Analyzer::OPERATOR()
 	uint tar_i_3 = 0, tar_i_4 = 0;
 
 	int ident_pos, write_argc = 0;
+	int type_pos,  struct_pos;
+	int field_pos;
+
+	string field_name;
+
 
 	switch(lex)
 	{
@@ -332,7 +337,6 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = POLIZ_FGO;
 			lexeme.value    = -1; //Ни оптимизации ради, а токмо в силу связавших меня обязательств по соблюдению логики программы...
-
 			poliz.push(lexeme);
 
 			get_lexeme();
@@ -348,7 +352,6 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = POLIZ_GO;
 			lexeme.value    = -1;
-
 			poliz.push(lexeme);
 
 			get_lexeme();
@@ -392,7 +395,6 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = POLIZ_FGO;
 			lexeme.value    = -1;
-
 			poliz.push(lexeme);
 
 			break_stack.allow();
@@ -403,12 +405,10 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = POLIZ_LABEL;
 			lexeme.value    = tar_i_2;
-
 			poliz.push(lexeme);
 
 			lexeme.lex_type = POLIZ_GO;
 			lexeme.value    = -1;
-
 			poliz.push(lexeme);
 
 			tar_i_1                  = poliz.current();
@@ -438,12 +438,50 @@ void Analyzer::OPERATOR()
 			if (!tid.is_defined(ident_pos))
 				throw "Syntax error: Undefined identificator";
 
-			op = tid.get_type(ident_pos);
+			get_lexeme();
 
-			if (op != LEX_INT && op != LEX_STRING)
-				throw "Semantic error: Expected integer/string variable";
+			if (lex == LEX_DOT)
+			{
+				get_lexeme();
 
-			poliz.push(lex_list[pos]);
+				if (lex != LEX_IDENT)
+					throw "Syntax error: wrong '.' usage";
+
+// В случае структур в поле value хранится номер записи соответстующего типа в таблице структур
+				type_pos   = lex_list.get_value(pos - 2);
+				ident_pos  = lex_list.get_value(pos);
+				struct_pos = tid.get_value(type_pos);
+				field_pos  = tstruct.find(struct_pos, tid.get_name(ident_pos));
+
+				if (field_pos == -1)
+					throw "Syntax error: No such field in this structure";
+
+				type       = tstruct[struct_pos].fields[field_pos].type;
+				field_name = tid.get_name(type_pos) + "." + tstruct[struct_pos].fields[field_pos].name;
+
+				if ((ident_pos = tid.find(field_name)) == -1)
+				{
+					ident_pos = tid.push(field_name);
+					tid.set_type(ident_pos, type);
+				}
+
+				lexeme.lex_type = POLIZ_ADDRESS;
+				lexeme.value    = ident_pos;
+				poliz.push(lexeme);
+			}
+			else
+			{
+				step_back();
+
+				op = tid.get_type(ident_pos);
+
+				if (op != LEX_INT && op != LEX_STRING)
+					throw "Semantic error: Expected integer/string variable";
+
+				lexeme.lex_type = POLIZ_ADDRESS;
+				lexeme.value    = lex_list[pos].value;
+				poliz.push(lexeme);
+			}
 
 			get_lexeme();
 
@@ -452,7 +490,6 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = LEX_READ;
 			lexeme.value    = -1;
-
 			poliz.push(lexeme);
 
 			get_lexeme();
@@ -462,7 +499,6 @@ void Analyzer::OPERATOR()
 
 			lexeme.lex_type = LEX_SEMICOLON;
 			lexeme.value    = -1;
-
 			poliz.push(lexeme);
 
 			get_lexeme();
@@ -660,7 +696,7 @@ void Analyzer::OPERATOR()
 
 				get_lexeme();
 
-				poliz[lab_i_1].value = poliz.current() + 1;
+				poliz[lab_i_1].value = poliz.current() - 1;
 
 				lexeme.lex_type = POLIZ_LABEL;
 				lexeme.value    = -1;
@@ -695,6 +731,8 @@ void Analyzer::OPERATOR()
 
 			if (lex != LEX_RCRO)
 				throw "Syntax error: Expected }";
+
+			get_lexeme();
 
 			lexeme.lex_type = LEX_DEFAULT;
 			lexeme.value    = -1;
@@ -800,10 +838,6 @@ void Analyzer::OPERATOR()
 					throw "Syntax error: Expected ;";
 			}
 
-			lexeme.lex_type = LEX_SEMICOLON;
-			lexeme.value    = -1;
-			poliz.push(lexeme);
-
 			lexeme.lex_type = POLIZ_LABEL;
 			lexeme.value    = -1;
 			lab_i_1         = poliz.push(lexeme);
@@ -817,6 +851,10 @@ void Analyzer::OPERATOR()
 			lab_i_2         = poliz.push(lexeme);
 
 			lexeme.lex_type = POLIZ_GO;
+			lexeme.value    = -1;
+			poliz.push(lexeme);
+
+			lexeme.lex_type = LEX_SEMICOLON;
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
@@ -920,7 +958,7 @@ void Analyzer::OPERATOR()
 				tid.initialize(ident_pos, poliz.current() - 1);
 			}
 
-			lexeme.lex_type = LEX_GOTO;
+			lexeme.lex_type = POLIZ_GO;
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
@@ -958,24 +996,22 @@ void Analyzer::EXPRESSION()
 	LexType  op1, op2;
 	uint assign_count = 0;
 
-	E1();
+	EXP_OR();
 
 	op1 = pop_op();
 
 	while(lex == LEX_ASSIGN)
 	{
-		poliz.pop();
+		lexeme = poliz.pop();
 
 		lexeme.lex_type = POLIZ_ADDRESS;
-		lexeme.value    = lex_list.get_value(pos - 1); //Номер в ТИД
-
 		poliz.push(lexeme);
 
 		get_lexeme();
 
 		++assign_count;
 
-		E1();
+		EXP_OR();
 
 		op2 = pop_op();
 
@@ -993,11 +1029,11 @@ void Analyzer::EXPRESSION()
 	expression_type_stack.push_back(op1);
 }
 
-void Analyzer::E1()
+void Analyzer::EXP_OR()
 {
 	LexType op1, op2;
 
-	E2();
+	EXP_AND();
 
 	op1 = pop_op();
 
@@ -1005,7 +1041,7 @@ void Analyzer::E1()
 	{
 		get_lexeme();
 
-		E2();
+		EXP_AND();
 
 		op2 = pop_op();
 
@@ -1013,18 +1049,17 @@ void Analyzer::E1()
 
 		lexeme.lex_type = LEX_OR;
 		lexeme.value    = -1;
-
 		poliz.push(lexeme);
 	}
 
 	expression_type_stack.push_back(op1);
 }
 
-void Analyzer::E2()
+void Analyzer::EXP_AND()
 {
 	LexType op1, op2;
 
-	E3();
+	EXP_CMP();
 
 	op1 = pop_op();
 
@@ -1032,7 +1067,7 @@ void Analyzer::E2()
 	{
 		get_lexeme();
 
-		E3();
+		EXP_CMP();
 
 		op2 = pop_op();
 
@@ -1040,18 +1075,17 @@ void Analyzer::E2()
 
 		lexeme.lex_type = LEX_AND;
 		lexeme.value    = -1;
-
 		poliz.push(lexeme);
 	}
 
 	expression_type_stack.push_back(op1);
 }
 
-void Analyzer::E3()
+void Analyzer::EXP_CMP()
 {
 	LexType op1, op2;
 
-	E4();
+	EXP_PLUS_MINUS();
 
 	op1 = pop_op();
 
@@ -1064,7 +1098,7 @@ void Analyzer::E3()
 
 			get_lexeme();
 
-			E4();
+			EXP_PLUS_MINUS();
 
 			op2 = pop_op();
 
@@ -1080,11 +1114,11 @@ void Analyzer::E3()
 		expression_type_stack.push_back(op1);
 }
 
-void Analyzer::E4()
+void Analyzer::EXP_PLUS_MINUS()
 {
 	LexType op1, op2, op_type;
 
-	E5();
+	EXP_MULT_DIV();
 
 	op1 = pop_op();
 
@@ -1094,7 +1128,7 @@ void Analyzer::E4()
 
 		get_lexeme();
 
-		E5();
+		EXP_MULT_DIV();
 
 		op2 = pop_op();
 
@@ -1102,18 +1136,17 @@ void Analyzer::E4()
 
 		lexeme.lex_type = op_type;
 		lexeme.value    = -1;
-
 		poliz.push(lexeme);
 	}
 
 	expression_type_stack.push_back(op1);
 }
 
-void Analyzer::E5()
+void Analyzer::EXP_MULT_DIV()
 {
 	LexType op1, op2, op_type;
 
-	E6();
+	EXP_NOT();
 
 	op1 = pop_op();
 
@@ -1123,7 +1156,7 @@ void Analyzer::E5()
 
 		get_lexeme();
 
-		E6();
+		EXP_NOT();
 
 		op2 = pop_op();
 
@@ -1131,14 +1164,13 @@ void Analyzer::E5()
 
 		lexeme.lex_type = op_type;
 		lexeme.value    = -1;
-
 		poliz.push(lexeme);
 	}
 
 	expression_type_stack.push_back(op1);
 }
 
-void Analyzer::E6()
+void Analyzer::EXP_NOT()
 {
 	LexType op1;
 
@@ -1146,7 +1178,7 @@ void Analyzer::E6()
 	{
 		get_lexeme();
 
-		E7();
+		EXP_UN_MINUS();
 
 		op1 = pop_op();
 
@@ -1154,16 +1186,15 @@ void Analyzer::E6()
 
 		lexeme.lex_type = LEX_NOT;
 		lexeme.value    = -1;
-
 		poliz.push(lexeme);
 
 		expression_type_stack.push_back(op1);
 	}
 	else
-		E7();
+		EXP_UN_MINUS();
 }
 
-void Analyzer::E7()
+void Analyzer::EXP_UN_MINUS()
 {
 	LexType op1;
 
@@ -1171,24 +1202,23 @@ void Analyzer::E7()
 	{
 		get_lexeme();
 
-		E8();
+		EXP_PAR();
 
 		op1 = pop_op();
 
 		check_minus(op1);
 
-		lexeme.lex_type = LEX_MINUS;
+		lexeme.lex_type = LEX_UMIN;
 		lexeme.value    = -1;
-
 		poliz.push(lexeme);
 
 		expression_type_stack.push_back(op1);
 	}
 	else
-		E8();
+		EXP_PAR();
 }
 
-void Analyzer::E8()
+void Analyzer::EXP_PAR()
 {
 	int ident_pos  = 0; // Позиция лексемы в ТИД
 	int type_pos   = 0; // Позиция переменной-структуры в ТИД
@@ -1245,9 +1275,8 @@ void Analyzer::E8()
 					tid.set_type(tid_pos, type);
 				}
 
-				lexeme.lex_type = type;
+				lexeme.lex_type = LEX_IDENT;
 				lexeme.value    = tid_pos;
-
 				poliz.push(lexeme);
 
 				expression_type_stack.push_back(type);

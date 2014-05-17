@@ -14,7 +14,7 @@ const LexType t_tw[] = {
 const LexType t_td[] = {
 	LEX_LCRO,  LEX_RCRO, LEX_LPAR, LEX_RPAR, LEX_COLON, LEX_SEMICOLON, LEX_COMMA,
 	LEX_EQ,    LEX_NEQ,  LEX_LEQ,  LEX_GEQ,  LEX_LSS,   LEX_GTR,       LEX_PLUS,
-	LEX_MINUS, LEX_DIV,  LEX_MULT, LEX_DOT,  LEX_ASSIGN
+	LEX_MINUS, LEX_UMIN, LEX_DIV,  LEX_MULT, LEX_DOT,  LEX_ASSIGN
 };
 
 const char *t_TW[] = {
@@ -27,13 +27,13 @@ const char *t_TW[] = {
 const char *t_TD[] = {
 	"{", "}", "(", ")", ":", ";",
 	",", "==", "!=", "<=", ">=", "<", ">",
-	"+", "-", "/", "*", ".", "="
+	"+", "-", "-", "/", "*", ".", "="
 };
 
-void TID::print() const
+void TID::print(ofstream &fout) const
 {
 	for (unsigned int i=0; i < table.size(); ++i)
-		cout << '#' << i << ": " << table.at(i).name            << endl <<
+		fout << '#' << i << ": " << table.at(i).name            << endl <<
 		'\t' << "Defined: "      << table.at(i).defined         << endl <<
 		'\t' << "Initialized: "  << table.at(i).initialized     << endl <<
 		'\t' << "Type: "         << print_lex(table.at(i).type) << endl <<
@@ -60,17 +60,17 @@ int TSTR::find(const string &str) const
 	return -1;
 }
 
-void TSTR::print() const
+void TSTR::print(ofstream &fout) const
 {
 	for (unsigned int i=0; i < table.size(); ++i)
-		cout << '#' << i << ": " << table[i] << endl;
+		fout << '#' << i << ": " << table[i] << endl;
 }
 
-void LexList::print() const
+void LexList::print(ofstream &fout) const
 {
 	for (unsigned int i=0; i<list.size(); ++i)
 	{
-		cout << print_lex(list[i].lex_type) << " -> " << list[i].value << endl;
+		fout << print_lex(list[i].lex_type) << " -> " << list[i].value << endl;
 	}
 }
 
@@ -118,10 +118,6 @@ string print_lex(LexType lex)
 		return "POLIZ LABEL";
 	break;
 
-	case POLIZ_TGO:
-		return "POLIZ TGO";
-	break;
-
 	default:
 		return "I think we need to change head-programmer...";
 	break;
@@ -137,18 +133,18 @@ int TSTRUCT::find(int i, const string &str) const
 	return -1;
 }
 
-void TSTRUCT::print() const
+void TSTRUCT::print(ofstream &fout) const
 {
 	for (uint i = 0; i < table.size(); ++i)
 	{
-		cout << table[i].name << endl;
+		fout << table[i].name << endl;
 		for (uint j = 0; j < table[i].fields.size(); ++j)
-			cout << '\t' << table[i].fields[j].name << " : " << print_lex(table[i].fields[j].type) << endl;
+			fout << '\t' << table[i].fields[j].name << " : " << print_lex(table[i].fields[j].type) << endl;
 	}
 }
 
-void POLIZ::print() const
+void POLIZ::print(ofstream &fout) const
 {
 	for (uint i = 0; i < table.size(); ++i)
-		cout << '#' << i << ": " << print_lex(table[i].lex_type) << " : " << table[i].value << endl;
+		fout << '#' << i << ": " << print_lex(table[i].lex_type) << " : " << table[i].value << endl;
 }

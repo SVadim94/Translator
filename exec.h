@@ -1,4 +1,5 @@
 #include <vector>
+#include <iostream>
 
 #ifndef __tables__
 #include "tables.h"
@@ -20,7 +21,8 @@ class Executer
 	TSTRUCT &tstruct;
 	POLIZ   &poliz;
 
-	vector<LexType> stack;
+	SWITCH_STACK switch_stack;
+	vector<Lex>  stack;
 
 public:
     Executer(TID &tid, TSTR &tstr, TSTRUCT &tstruct, POLIZ &poliz) :
@@ -28,5 +30,6 @@ public:
 
 	void start ();
 	void push  (Lex);
+	void clear ();
+	Lex  pop   ();
 };
-
