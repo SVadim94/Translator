@@ -238,7 +238,7 @@ void Analyzer::STRING()
 
 	ident_pos = lex_list.get_value(pos - 2);
 
-	tid.initialize(ident_pos, lex_list.get_value(pos));
+	tid.initialize(ident_pos, tstr.push(tstr[lex_list.get_value(pos)]));
 	tid.set_type(ident_pos, block_type);
 
 	get_lexeme();
@@ -354,13 +354,15 @@ void Analyzer::OPERATOR()
 			lexeme.value    = -1;
 			poliz.push(lexeme);
 
+			tar_i_1 = poliz.current();
+
 			get_lexeme();
 
 			OPERATOR();
 
-			tar_i_1              = poliz.current();
+			tar_i_2              = poliz.current();
 			poliz[lab_i_1].value = tar_i_1; // Теперь ссылки указывают на ';'
-			poliz[lab_i_2].value = tar_i_1; // Обе ссылки...
+			poliz[lab_i_2].value = tar_i_2; // Обе ссылки...
 
 			lexeme.lex_type = LEX_SEMICOLON;
 			lexeme.value    = -1;
@@ -1305,6 +1307,7 @@ void Analyzer::EXP_PAR()
 	}
 }
 
+//Структуры!
 inline void check_assign(LexType op1, LexType op2)
 {
 	if (op1 == LEX_NUM || op1 == LEX_STR || op1 == LEX_TRUE || op1 == LEX_FALSE)
@@ -1331,6 +1334,9 @@ inline void check_comparison(LexType op1, LexType op2)
 
 	if (op2 == LEX_BOOL || op2 == LEX_TRUE || op2 == LEX_FALSE)
 		throw "Semantic error: boolean comparison is not allowed";
+
+	if (op1 == LEX_STRUCT || op2 == LEX_STRUCT)
+		throw "Semantic error: struct comparison is not allowed";
 
 	if (op1 == LEX_STRING)
 		op1 =  LEX_STR;

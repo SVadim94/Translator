@@ -15,11 +15,21 @@ int main(int argc, char *argv[])
 {
 	try
 	{
-		if (argc < 3)
-			throw "Error! No filename!";
+		ifstream fin;
+		ofstream fout;
 
-		ifstream fin(argv[1]);
-		ofstream fout(argv[2]);
+		if (argc == 1)
+			throw "No file name!";
+		else
+		if (argc == 2)
+			cout << "Warning : Debug info won't be printed!" << endl;
+		else
+			fout.open(argv[2]);
+
+		fin.open(argv[1]);
+
+		if (fin.fail())
+			throw "Error while opening file!";
 
 		TID     tid;
 		TSTR    tstr;
@@ -37,9 +47,12 @@ int main(int argc, char *argv[])
 
 		exec.start();
 
-		parser.print(fout, tid, tstr, lex_list);
-		tstruct.print(fout);
-		poliz.print(fout);
+        if (argc == 2)
+		{
+			parser.print(fout, tid, tstr, lex_list);
+			tstruct.print(fout);
+			poliz.print(fout);
+		}
 	}
 	catch(const char * str) {cout << str << endl;}
 	catch(...) {cout << "Unexpected error!";}

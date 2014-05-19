@@ -211,6 +211,7 @@ void Executer :: start()
 					break;
 					}
 				}
+				cout << endl;
 		break;
 
 		case LEX_EQ:
@@ -218,7 +219,12 @@ void Executer :: start()
 			op1 = pop();
 
 			lexeme.lex_type = LEX_BOOL;
-			lexeme.value    = (op1.value == op2.value);
+
+			if (op1.lex_type == LEX_NUM)
+				lexeme.value = (op1.value == op2.value);
+			else
+				lexeme.value = (tstr[op1.value] == tstr[op2.value]);
+
 			push(lexeme);
 		break;
 
@@ -227,7 +233,12 @@ void Executer :: start()
 			op1 = pop();
 
 			lexeme.lex_type = LEX_BOOL;
-			lexeme.value    = (op1.value != op2.value);
+
+			if (op1.lex_type == LEX_NUM)
+				lexeme.value = (op1.value != op2.value);
+			else
+				lexeme.value = (tstr[op1.value] != tstr[op2.value]);
+
 			push(lexeme);
 		break;
 
@@ -236,7 +247,12 @@ void Executer :: start()
 			op1 = pop();
 
 			lexeme.lex_type = LEX_BOOL;
-			lexeme.value    = (op1.value > op2.value);
+
+			if (op1.lex_type == LEX_NUM)
+				lexeme.value = (op1.value > op2.value);
+			else
+				lexeme.value = (tstr[op1.value] > tstr[op2.value]);
+
 			push(lexeme);
 		break;
 
@@ -245,7 +261,12 @@ void Executer :: start()
 			op1 = pop();
 
 			lexeme.lex_type = LEX_BOOL;
-			lexeme.value    = (op1.value < op2.value);
+
+			if (op1.lex_type == LEX_NUM)
+				lexeme.value = (op1.value < op2.value);
+			else
+				lexeme.value = (tstr[op1.value] < tstr[op2.value]);
+
 			push(lexeme);
 		break;
 
@@ -254,7 +275,11 @@ void Executer :: start()
 			op1 = pop();
 
 			lexeme.lex_type = LEX_BOOL;
-			lexeme.value    = (op1.value >= op2.value);
+			if (op1.lex_type == LEX_NUM)
+				lexeme.value = (op1.value >= op2.value);
+			else
+				lexeme.value = (tstr[op1.value] >= tstr[op2.value]);
+
 			push(lexeme);
 		break;
 
@@ -263,7 +288,11 @@ void Executer :: start()
 			op1 = pop();
 
 			lexeme.lex_type = LEX_BOOL;
-			lexeme.value    = (op1.value <= op2.value);
+
+			if (op1.lex_type == LEX_NUM)
+				lexeme.value = (op1.value <= op2.value);
+			else
+				lexeme.value = (tstr[op1.value] <= tstr[op2.value]);
 			push(lexeme);
 		break;
 
@@ -322,6 +351,9 @@ void Executer :: start()
 			break;
 
 			case LEX_STRUCT:
+				if (tid.get_value(op1.value) != tid.get_value(op2.value))
+					throw "Syntax error: structure type mismatch";
+
 				for (vector<FIELD> :: iterator iter = tstruct[tid.get_value(op2.value)].fields.begin();
 					iter < tstruct[tid.get_value(op2.value)].fields.end(); ++iter)
 					{
@@ -347,6 +379,13 @@ void Executer :: start()
 							else
 								tstr[tid.get_value(lValue)].assign(tstr[tid.get_value(rValue)]);
 						}
+						else
+						{
+							if (tid.get_type(lValue) == LEX_BOOL || tid.get_type(lValue) == LEX_INT)
+								tid.set_value(lValue, 0);
+							else
+								tstr[tid.get_value(lValue)].assign("");
+						}
 					}
 			break;
 
@@ -354,16 +393,17 @@ void Executer :: start()
 				cout << "WATCH ASSIGN";
 			break;
 			}
+			push(op2);
 		break;
 
 		case LEX_SEMICOLON:
 			clear();
 
-			while(tmp_str_allocated != 0)
+/*			while(tmp_str_allocated != 0)
 			{
 				tstr.pop();
 				--tmp_str_allocated;
-			}
+			}*/
 		break;
 
 		case LEX_LABEL:
