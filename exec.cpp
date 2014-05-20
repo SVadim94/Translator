@@ -137,7 +137,7 @@ void Executer :: start()
 			op1 = pop();
 
 			lexeme.lex_type = LEX_NUM;
-			lexeme.value    = op1.value / op2.value;
+			lexeme.value    = op1.value * op2.value;
 			push(lexeme);
 		break;
 
@@ -146,7 +146,7 @@ void Executer :: start()
 			op1 = pop();
 
 			lexeme.lex_type = LEX_NUM;
-			lexeme.value    = op1.value * op2.value;
+			lexeme.value    = op1.value / op2.value;
 			push(lexeme);
 		break;
 
@@ -170,6 +170,7 @@ void Executer :: start()
 
 		case LEX_NOT:
 			op1 = pop();
+
 			op1.value = !op1.value;
 			push(op1);
 		break;
